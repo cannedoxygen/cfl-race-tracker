@@ -7,6 +7,7 @@ import { RaceControls } from './RaceControls';
 import { RecentTrades } from './RecentTrades';
 import { AlertPanel } from './AlertPanel';
 import { Header } from './Header';
+import { MostVolatile } from './MostVolatile';
 import { useRaceData } from '@/hooks/useRaceData';
 
 export function Dashboard() {
@@ -67,7 +68,7 @@ export function Dashboard() {
             />
           </div>
 
-          {/* Bottom row - Leaderboard + Recent Trades */}
+          {/* Bottom row - Leaderboard + Most Volatile + Recent Trades */}
           <div className="h-[200px] flex gap-2 flex-shrink-0">
             {/* Leaderboard */}
             <div className="flex-1 bg-cfl-card rounded-xl p-3 overflow-hidden">
@@ -80,9 +81,18 @@ export function Dashboard() {
               />
             </div>
 
+            {/* Most Volatile - Top 5 biggest swings */}
+            <div className="w-[250px] bg-cfl-card rounded-xl p-3 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+              />
+            </div>
+
             {/* Recent Trades */}
             {status === 'racing' && recentTrades.length > 0 && (
-              <div className="w-[300px] bg-cfl-card rounded-xl p-2 overflow-hidden">
+              <div className="w-[250px] bg-cfl-card rounded-xl p-2 overflow-hidden">
                 <RecentTrades trades={recentTrades} compact />
               </div>
             )}
