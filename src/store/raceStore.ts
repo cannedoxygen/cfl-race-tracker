@@ -192,10 +192,11 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       const pos = newPositions.get(update.mint);
       if (!pos) continue;
 
-      const previousPosition = pos.position;
-
-      // Calculate velocity (change in % per update)
-      const velocity = update.percentChange - previousPosition;
+      // Calculate velocity over 5-minute window
+      const fiveMinutesAgo = now - 5 * 60 * 1000;
+      const historicalEntry = pos.history.find(h => h.timestamp >= fiveMinutesAgo) || pos.history[0];
+      const basePosition = historicalEntry?.position ?? 0;
+      const velocity = update.percentChange - basePosition;
 
       // Determine momentum based on velocity
       let momentum: MomentumSignal = 'neutral';

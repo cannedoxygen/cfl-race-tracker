@@ -71,7 +71,7 @@ export interface RacePosition {
   buyCount: number; // Number of buy transactions
   sellCount: number; // Number of sell transactions
   buyRatio: number; // buys / (buys + sells), 0-1 scale
-  velocity: number; // Rate of change in % (per update)
+  velocity: number; // Rate of change in % over 5-minute window
   momentum: MomentumSignal; // Overall momentum signal
   volumeSpike: boolean; // True if recent volume is abnormally high
   recentVolume: number; // Volume in last 60 seconds

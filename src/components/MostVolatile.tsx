@@ -39,7 +39,7 @@ export function MostVolatile({ positions, onSelectToken, selectedToken }: Props)
           <span className="text-orange-400">~</span> Most Volatile
         </h2>
         <span className="text-[10px] text-orange-400">
-          Biggest swings
+          5m window
         </span>
       </div>
 
