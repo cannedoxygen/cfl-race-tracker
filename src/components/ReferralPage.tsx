@@ -120,8 +120,10 @@ export function ReferralPage() {
       <div className="max-w-3xl mx-auto space-y-6 pb-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Weekly Referral Giveaway</h1>
-          <p className="text-gray-400 text-sm">
+          <h1 className="font-pixel text-lg text-cfl-gold mb-3 animate-gold-shimmer">
+            WEEKLY GIVEAWAY
+          </h1>
+          <p className="font-pixel-body text-xl text-cfl-text-muted">
             Use my referral code, play CFL, and you're automatically entered to win 50% of the fees!
           </p>
         </div>
@@ -129,127 +131,127 @@ export function ReferralPage() {
         {/* Stats Cards */}
         {cflData?.stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-cfl-card rounded-xl p-4 border border-cfl-border text-center">
-              <div className="text-2xl font-bold text-green-400">
+            <div className="card-pixel p-4 text-center">
+              <div className="font-pixel text-sm text-cfl-green">
                 {cflData.totalEarnings.toFixed(5)}
               </div>
-              <div className="text-xs text-gray-400">SOL This Week</div>
+              <div className="font-pixel-body text-sm text-cfl-text-muted mt-1">SOL This Week</div>
             </div>
-            <div className="bg-cfl-card rounded-xl p-4 border border-cfl-border text-center">
-              <div className="text-2xl font-bold text-orange-400">
+            <div className="card-pixel p-4 text-center">
+              <div className="font-pixel text-sm text-cfl-orange">
                 {cflData.totalReferrals}
               </div>
-              <div className="text-xs text-gray-400">Total Referrals</div>
+              <div className="font-pixel-body text-sm text-cfl-text-muted mt-1">Total Referrals</div>
             </div>
-            <div className="bg-cfl-card rounded-xl p-4 border border-cfl-border text-center">
-              <div className="text-2xl font-bold text-blue-400">
+            <div className="card-pixel p-4 text-center">
+              <div className="font-pixel text-sm text-cfl-teal">
                 {cflData.totalActive}
               </div>
-              <div className="text-xs text-gray-400">Entries This Week</div>
+              <div className="font-pixel-body text-sm text-cfl-text-muted mt-1">Entries This Week</div>
             </div>
-            <div className="bg-cfl-card rounded-xl p-4 border border-cfl-border text-center">
-              <div className="text-2xl font-bold text-purple-400">
+            <div className="card-pixel p-4 text-center">
+              <div className="font-pixel text-sm text-cfl-gold text-gold-glow">
                 {(cflData.totalEarnings * 0.5).toFixed(5)}
               </div>
-              <div className="text-xs text-gray-400">Prize Pool (50%)</div>
+              <div className="font-pixel-body text-sm text-cfl-text-muted mt-1">Prize Pool (50%)</div>
             </div>
           </div>
         )}
 
         {/* How It Works */}
-        <div className="bg-cfl-card rounded-xl p-5 border border-cfl-border">
-          <h2 className="text-lg font-semibold mb-3 text-orange-400">How It Works</h2>
-          <ol className="space-y-2 text-sm text-gray-300">
-            <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+        <div className="card-pixel p-5">
+          <h2 className="font-pixel text-[10px] text-cfl-orange mb-4">HOW IT WORKS</h2>
+          <ol className="space-y-3 font-pixel-body text-lg text-cfl-text-muted">
+            <li className="flex gap-3 items-start">
+              <span className="flex-shrink-0 w-6 h-6 bg-cfl-orange/20 text-cfl-orange rounded font-pixel text-[8px] flex items-center justify-center">1</span>
               <span>Sign up on CFL using my referral code below</span>
             </li>
-            <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+            <li className="flex gap-3 items-start">
+              <span className="flex-shrink-0 w-6 h-6 bg-cfl-orange/20 text-cfl-orange rounded font-pixel text-[8px] flex items-center justify-center">2</span>
               <span>Play at least one paid game (Rush or Tournament) this week</span>
             </li>
-            <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center text-xs font-bold">✓</span>
-              <span><strong className="text-green-400">You're automatically entered!</strong> No signup needed.</span>
+            <li className="flex gap-3 items-start">
+              <span className="flex-shrink-0 w-6 h-6 bg-cfl-green/20 text-cfl-green rounded font-pixel text-[8px] flex items-center justify-center">✓</span>
+              <span><strong className="text-cfl-green">You're automatically entered!</strong> No signup needed.</span>
             </li>
-            <li className="flex gap-3">
-              <span className="flex-shrink-0 w-5 h-5 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-xs font-bold">3</span>
-              <span>Every Friday at noon, one winner gets <strong className="text-green-400">50% of that week's fees</strong>!</span>
+            <li className="flex gap-3 items-start">
+              <span className="flex-shrink-0 w-6 h-6 bg-cfl-gold/20 text-cfl-gold rounded font-pixel text-[8px] flex items-center justify-center">$</span>
+              <span>Every Friday at noon, one winner gets <strong className="text-cfl-gold">50% of that week's fees</strong>!</span>
             </li>
           </ol>
-          <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-400">Next drawing:</span>
-              <span className="text-green-400 font-medium">{getNextFriday()}</span>
+          <div className="mt-4 p-3 bg-cfl-bg rounded-lg border border-cfl-border">
+            <div className="flex justify-between items-center">
+              <span className="font-pixel text-[8px] text-cfl-text-muted">NEXT DRAWING:</span>
+              <span className="font-pixel-body text-lg text-cfl-green">{getNextFriday()}</span>
             </div>
           </div>
         </div>
 
         {/* Referral Code */}
-        <div className="bg-cfl-card rounded-xl p-5 border border-cfl-border">
-          <h2 className="text-lg font-semibold mb-3">Join with My Code</h2>
-          <div className="flex items-center gap-2 bg-gray-800 rounded-lg p-3 border border-gray-700">
-            <span className="text-xl font-mono font-bold text-orange-400 flex-1 text-center">
+        <div className="card-pixel p-5">
+          <h2 className="font-pixel text-[10px] text-white mb-4">JOIN WITH MY CODE</h2>
+          <div className="flex items-center gap-3 bg-cfl-bg rounded-lg p-4 border-2 border-cfl-orange/30">
+            <span className="font-pixel text-lg text-cfl-orange flex-1 text-center tracking-wider">
               {REFERRAL_CODE}
             </span>
             <button
               onClick={copyCode}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-pixel text-[8px] transition-all shadow-pixel-sm ${
                 copied
-                  ? 'bg-green-500/20 text-green-400 border border-green-500/50'
-                  : 'bg-orange-500/20 text-orange-400 border border-orange-500/50 hover:bg-orange-500/30'
+                  ? 'bg-cfl-green/20 text-cfl-green border-2 border-cfl-green/50'
+                  : 'bg-cfl-orange/20 text-cfl-orange border-2 border-cfl-orange/50 hover:bg-cfl-orange/30 hover:shadow-orange-glow'
               }`}
             >
-              {copied ? 'Copied!' : 'Copy'}
+              {copied ? 'COPIED!' : 'COPY'}
             </button>
           </div>
           <a
             href={CFL_SIGNUP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 block w-full text-center bg-gradient-to-r from-orange-500 to-red-500 text-white py-2.5 px-6 rounded-lg font-semibold text-sm hover:from-orange-600 hover:to-red-600 transition-colors"
+            className="mt-4 block w-full text-center bg-gradient-to-r from-cfl-orange to-cfl-red text-white py-3 px-6 rounded-lg font-pixel text-[10px] hover:shadow-orange-glow transition-all shadow-pixel-sm"
           >
-            Sign Up on CFL.fun
+            SIGN UP ON CFL.FUN
           </a>
         </div>
 
         {/* This Week's Entries */}
         {cflData && (
-          <div className="bg-cfl-card rounded-xl p-5 border border-cfl-border">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold">This Week's Entries</h2>
-              <span className="text-sm text-gray-400">
+          <div className="card-pixel p-5">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-pixel text-[10px] text-white">THIS WEEK'S ENTRIES</h2>
+              <span className="font-pixel-body text-sm text-cfl-text-muted">
                 {cflData.totalActive} eligible / {cflData.totalReferrals} total
               </span>
             </div>
 
             {loading ? (
-              <div className="text-center py-8 text-gray-500">Loading...</div>
+              <div className="text-center py-8 text-cfl-text-muted font-pixel text-[8px]">LOADING...</div>
             ) : cflData.referrals.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No referrals yet. Be the first!</div>
+              <div className="text-center py-8 text-cfl-text-muted font-pixel text-[8px]">NO REFERRALS YET. BE THE FIRST!</div>
             ) : (
-              <div className="space-y-2 max-h-80 overflow-y-auto">
+              <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
                 {/* Active entries first */}
                 {cflData.activeReferrals.map((referral) => (
                   <div
                     key={referral.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/30"
+                    className="flex items-center justify-between p-3 rounded-lg bg-cfl-green/10 border-2 border-cfl-green/30"
                   >
                     <div className="flex items-center gap-3">
                       <img
                         src={referral.profilePic}
                         alt={referral.username}
-                        className="w-8 h-8 rounded-full"
+                        className="w-8 h-8 rounded-full border border-cfl-green/50"
                       />
                       <div>
-                        <div className="font-medium text-sm">{referral.username}</div>
-                        <div className="text-xs text-green-400">
-                          Entered - played this week
+                        <div className="font-pixel-body text-lg text-white">{referral.username}</div>
+                        <div className="font-pixel text-[7px] text-cfl-green">
+                          ENTERED - PLAYED THIS WEEK
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-mono text-green-400">
+                      <div className="font-pixel text-[9px] text-cfl-green">
                         {referral.referralEarnings.toFixed(5)} SOL
                       </div>
                     </div>
@@ -262,18 +264,18 @@ export function ReferralPage() {
                   .map((referral) => (
                     <div
                       key={referral.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 opacity-60"
+                      className="flex items-center justify-between p-3 rounded-lg bg-cfl-bg border border-cfl-border opacity-60"
                     >
                       <div className="flex items-center gap-3">
                         <img
                           src={referral.profilePic}
                           alt={referral.username}
-                          className="w-8 h-8 rounded-full"
+                          className="w-8 h-8 rounded-full border border-cfl-border"
                         />
                         <div>
-                          <div className="font-medium text-sm">{referral.username}</div>
-                          <div className="text-xs text-gray-500">
-                            Not entered - needs to play a paid game
+                          <div className="font-pixel-body text-lg text-white">{referral.username}</div>
+                          <div className="font-pixel text-[7px] text-cfl-text-muted">
+                            NOT ENTERED - NEEDS TO PLAY
                           </div>
                         </div>
                       </div>
@@ -286,20 +288,22 @@ export function ReferralPage() {
 
         {/* Past Winners */}
         {pastWinners.length > 0 && (
-          <div className="bg-cfl-card rounded-xl p-5 border border-cfl-border">
-            <h2 className="text-lg font-semibold mb-3">Past Winners</h2>
+          <div className="card-pixel p-5">
+            <h2 className="font-pixel text-[10px] text-cfl-gold mb-4 flex items-center gap-2">
+              <span>🏆</span> PAST WINNERS
+            </h2>
             <div className="space-y-2">
               {pastWinners.map((winner, i) => (
                 <div
                   key={i}
-                  className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg"
+                  className="flex justify-between items-center p-3 bg-cfl-bg rounded-lg border border-cfl-border"
                 >
                   <div>
-                    <div className="text-green-400 font-semibold text-sm">{winner.winner}</div>
-                    <div className="text-xs text-gray-500">{winner.weekId}</div>
+                    <div className="font-pixel-body text-lg text-cfl-green">{winner.winner}</div>
+                    <div className="font-pixel text-[7px] text-cfl-text-muted">{winner.weekId}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-orange-400 font-medium text-sm">{winner.prize}</div>
+                    <div className="font-pixel text-[9px] text-cfl-gold">{winner.prize}</div>
                   </div>
                 </div>
               ))}
@@ -308,7 +312,7 @@ export function ReferralPage() {
         )}
 
         {/* Fine Print */}
-        <div className="text-center text-xs text-gray-600">
+        <div className="text-center font-pixel-body text-sm text-cfl-text-muted px-4">
           <p>
             Active players (those who played a paid game this week using my referral) are automatically entered.
             Winner is randomly selected every Friday at noon.

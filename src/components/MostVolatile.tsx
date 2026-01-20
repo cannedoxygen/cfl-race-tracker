@@ -73,20 +73,19 @@ export function MostVolatile({ positions, onSelectToken, selectedToken, filter =
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-bold text-white flex items-center gap-1">
-          <span className={config.iconColor}>{config.icon}</span> {config.title}
+        <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
+          <span className={config.iconColor}>{config.icon}</span> {config.title.toUpperCase()}
         </h2>
-        <span className={clsx('text-[10px]', config.iconColor)}>
+        <span className={clsx('font-pixel-body text-xs', config.iconColor)}>
           {config.subtitle}
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto space-y-1.5 custom-scrollbar">
         {sortedPositions.map((pos, index) => {
           const isSelected = selectedToken === pos.mint;
           const track = pos.boost ? getTrackFromBoost(pos.boost) : 'conservative';
           const trackColor = getTrackColor(track);
-          const absVelocity = Math.abs(pos.velocity);
           const isUp = pos.velocity >= 0;
 
           return (
@@ -94,14 +93,14 @@ export function MostVolatile({ positions, onSelectToken, selectedToken, filter =
               key={pos.mint}
               onClick={() => onSelectToken(isSelected ? null : pos.mint)}
               className={clsx(
-                'w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all',
-                'border bg-gray-800/30 border-gray-700/50 hover:border-gray-600',
-                isSelected && 'ring-2 ring-orange-400'
+                'w-full flex items-center gap-2 px-2 py-2 rounded-lg transition-all',
+                'border-2 bg-cfl-bg/50 border-cfl-border hover:border-cfl-text-muted',
+                isSelected && 'ring-2 ring-cfl-orange shadow-orange-glow'
               )}
             >
               {/* Rank indicator */}
               <div
-                className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold"
+                className="w-6 h-6 rounded flex items-center justify-center font-pixel text-[8px]"
                 style={{ backgroundColor: `${trackColor}30`, color: trackColor }}
               >
                 {index + 1}
@@ -109,8 +108,8 @@ export function MostVolatile({ positions, onSelectToken, selectedToken, filter =
 
               {/* Token logo */}
               <div
-                className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-                style={{ backgroundColor: `${pos.color}30` }}
+                className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 border border-cfl-border"
+                style={{ backgroundColor: `${pos.color}20` }}
               >
                 {pos.logoURI ? (
                   <Image
@@ -122,27 +121,27 @@ export function MostVolatile({ positions, onSelectToken, selectedToken, filter =
                     unoptimized
                   />
                 ) : (
-                  <span className="text-[10px] font-bold" style={{ color: pos.color }}>
+                  <span className="font-pixel text-[6px]" style={{ color: pos.color }}>
                     {pos.symbol.slice(0, 2)}
                   </span>
                 )}
               </div>
 
               {/* Symbol */}
-              <span className="font-bold text-white text-xs flex-1 text-left truncate">
+              <span className="font-pixel-body text-base text-white flex-1 text-left truncate">
                 {pos.symbol}
               </span>
 
               {/* Velocity/Volatility indicator */}
               <div className="flex items-center gap-1">
                 {filter === 'all' ? (
-                  <span className="text-xs font-bold text-orange-400">
+                  <span className="font-pixel text-[8px] text-cfl-orange">
                     {pos.volatility5m.toFixed(2)}%
                   </span>
                 ) : (
                   <span className={clsx(
-                    'text-xs font-bold',
-                    isUp ? 'text-green-400' : 'text-red-400'
+                    'font-pixel text-[8px]',
+                    isUp ? 'text-cfl-green' : 'text-cfl-red'
                   )}>
                     {isUp ? '+' : ''}{pos.velocity.toFixed(2)}%
                   </span>
@@ -153,9 +152,9 @@ export function MostVolatile({ positions, onSelectToken, selectedToken, filter =
         })}
 
         {sortedPositions.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-4 text-gray-500">
-            <div className="text-xl mb-1">{config.icon}</div>
-            <p className="text-[10px]">Waiting for data</p>
+          <div className="flex flex-col items-center justify-center py-6 text-cfl-text-muted">
+            <div className="text-2xl mb-2">{config.icon}</div>
+            <p className="font-pixel text-[8px]">WAITING...</p>
           </div>
         )}
       </div>

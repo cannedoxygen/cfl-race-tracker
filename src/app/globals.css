@@ -2,14 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Google Fonts - Pixel fonts for CFL aesthetic */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&display=swap');
+
 /* Base styles */
 :root {
-  --cfl-bg: #0a0a0f;
-  --cfl-card: #12121a;
-  --cfl-border: #1e1e2e;
-  --cfl-purple: #9945ff;
-  --cfl-cyan: #14f195;
-  --cfl-magenta: #ff3b9a;
+  /* CFL Dark Theme */
+  --cfl-bg: #0d1117;
+  --cfl-card: #161b22;
+  --cfl-border: #30363d;
+
+  /* Accent Colors */
+  --cfl-green: #3fb950;
+  --cfl-teal: #58a6ff;
+  --cfl-purple: #a855f7;
+  --cfl-orange: #f97316;
+  --cfl-gold: #fbbf24;
+  --cfl-red: #f85149;
+  --cfl-pink: #ec4899;
+
+  /* Text */
+  --cfl-text: #ffffff;
+  --cfl-text-muted: #8b949e;
+  --cfl-text-gold: #fcd34d;
+
+  /* Gradients */
+  --gradient-gold: linear-gradient(135deg, #f59e0b, #fbbf24);
+  --gradient-green: linear-gradient(135deg, #059669, #10b981);
+  --gradient-red: linear-gradient(135deg, #dc2626, #ef4444);
+  --gradient-purple: linear-gradient(135deg, #7c3aed, #a855f7);
 }
 
 html {
@@ -18,11 +39,12 @@ html {
 
 body {
   background: var(--cfl-bg);
-  color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: var(--cfl-text);
+  font-family: 'VT323', monospace;
+  font-size: 18px; /* VT323 works best slightly larger */
 }
 
-/* Gradient background effect */
+/* Gradient background effect - CFL style */
 body::before {
   content: '';
   position: fixed;
@@ -31,9 +53,9 @@ body::before {
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(circle at 20% 20%, rgba(153, 69, 255, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(20, 241, 149, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(255, 59, 154, 0.03) 0%, transparent 50%);
+    radial-gradient(circle at 20% 20%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(63, 185, 80, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.02) 0%, transparent 50%);
   pointer-events: none;
   z-index: -1;
 }
@@ -132,4 +154,86 @@ button, .no-select {
     min-width: 44px;
     min-height: 44px;
   }
+}
+
+/* Pixel font styles */
+.font-pixel {
+  font-family: 'Press Start 2P', cursive;
+  letter-spacing: 0.05em;
+}
+
+.font-pixel-body {
+  font-family: 'VT323', monospace;
+}
+
+.font-silkscreen {
+  font-family: 'Silkscreen', cursive;
+}
+
+/* Gold glow text effect */
+.text-gold-glow {
+  color: var(--cfl-gold);
+  text-shadow: 0 0 10px #fbbf24, 0 0 20px #f59e0b;
+}
+
+/* Pixel button styles */
+.btn-pixel {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 10px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 150ms ease;
+  text-transform: uppercase;
+}
+
+.btn-pixel:hover {
+  transform: scale(1.02);
+}
+
+.btn-pixel:active {
+  transform: scale(0.98);
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Pixel card style */
+.card-pixel {
+  background: var(--cfl-card);
+  border: 2px solid var(--cfl-border);
+  border-radius: 12px;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
+}
+
+/* Pixel badge/pill style */
+.badge-pixel {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid;
+}
+
+/* Chunky progress bar */
+.progress-pixel {
+  height: 12px;
+  border-radius: 6px;
+  background: var(--cfl-border);
+  overflow: hidden;
+}
+
+.progress-pixel-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 300ms ease;
+}
+
+/* Timer display - retro digital style */
+.timer-pixel {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--cfl-border);
 }

@@ -73,22 +73,22 @@ export function Header({ activeTab, onTabChange }: Props) {
   };
 
   return (
-    <header className="flex items-center justify-between px-3 py-2 border-b border-cfl-border flex-shrink-0 bg-cfl-bg gap-3">
+    <header className="flex items-center justify-between px-3 py-2 border-b-2 border-cfl-border flex-shrink-0 bg-cfl-card gap-3">
       {/* Left: Logo + Quick Actions */}
       <div className="flex items-center gap-3 flex-shrink-0">
         <div className="flex items-center gap-2">
           <div
             className={clsx(
-              'w-7 h-7 rounded-lg flex items-center justify-center text-sm',
+              'w-8 h-8 rounded-lg flex items-center justify-center text-base shadow-pixel-sm',
               matchMode === 'long'
-                ? 'bg-gradient-to-br from-green-500 to-green-700'
-                : 'bg-gradient-to-br from-red-500 to-red-700'
+                ? 'bg-gradient-to-br from-cfl-green to-green-700'
+                : 'bg-gradient-to-br from-cfl-red to-red-700'
             )}
           >
             {matchMode === 'long' ? '📈' : '📉'}
           </div>
-          <h1 className="text-sm font-bold text-white hidden sm:block">
-            CFL Race Tracker
+          <h1 className="font-pixel text-[8px] text-cfl-gold hidden sm:block tracking-wide">
+            CFL RACE
           </h1>
         </div>
 
@@ -97,10 +97,10 @@ export function Header({ activeTab, onTabChange }: Props) {
           <button
             onClick={() => copyToClipboard(TIP_USERNAME, 'tip')}
             className={clsx(
-              'px-2 py-1 rounded text-[10px] font-medium transition-all',
+              'px-2.5 py-1.5 rounded-lg font-pixel-body text-sm font-bold transition-all border',
               copiedTip
-                ? 'bg-green-500/20 text-green-400'
-                : 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30'
+                ? 'bg-cfl-green/20 text-cfl-green border-cfl-green/50'
+                : 'bg-cfl-purple/20 text-cfl-purple border-cfl-purple/30 hover:bg-cfl-purple/30 hover:shadow-purple-glow'
             )}
             title="Copy username to tip on CFL"
           >
@@ -109,10 +109,10 @@ export function Header({ activeTab, onTabChange }: Props) {
           <button
             onClick={() => copyToClipboard(REFERRAL_CODE, 'code')}
             className={clsx(
-              'px-2 py-1 rounded text-[10px] font-medium transition-all',
+              'px-2.5 py-1.5 rounded-lg font-pixel-body text-sm font-bold transition-all border',
               copiedCode
-                ? 'bg-green-500/20 text-green-400'
-                : 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
+                ? 'bg-cfl-green/20 text-cfl-green border-cfl-green/50'
+                : 'bg-cfl-orange/20 text-cfl-orange border-cfl-orange/30 hover:bg-cfl-orange/30 hover:shadow-orange-glow'
             )}
             title="Copy referral code"
           >
@@ -123,19 +123,19 @@ export function Header({ activeTab, onTabChange }: Props) {
 
       {/* Center: Race Controls (only on race tab) */}
       {activeTab === 'race' && (
-        <div className="flex items-center gap-2 flex-1 justify-center">
+        <div className="flex items-center gap-3 flex-1 justify-center">
           {/* Track Selector */}
-          <div className="hidden md:flex rounded-lg overflow-hidden border border-cfl-border">
+          <div className="hidden md:flex rounded-lg overflow-hidden border-2 border-cfl-border shadow-pixel-sm">
             {TRACK_CONFIG.map((track) => (
               <button
                 key={track.id}
                 onClick={() => setSelectedTrack(track.id)}
                 disabled={status === 'racing'}
                 className={clsx(
-                  'px-1.5 py-1 text-[9px] font-bold transition-all',
+                  'px-2 py-1.5 font-pixel text-[7px] transition-all',
                   selectedTrack === track.id
-                    ? `${track.color} text-white`
-                    : 'bg-cfl-bg text-gray-400 hover:text-white',
+                    ? `${track.color} text-white shadow-inner`
+                    : 'bg-cfl-bg text-cfl-text-muted hover:text-white hover:bg-cfl-border',
                   status === 'racing' && 'opacity-50 cursor-not-allowed'
                 )}
               >
@@ -145,15 +145,15 @@ export function Header({ activeTab, onTabChange }: Props) {
           </div>
 
           {/* Long/Short Toggle */}
-          <div className="flex rounded-lg overflow-hidden border border-cfl-border">
+          <div className="flex rounded-lg overflow-hidden border-2 border-cfl-border shadow-pixel-sm">
             <button
               onClick={() => setMatchMode('long')}
               disabled={status === 'racing'}
               className={clsx(
-                'px-2 py-1 text-[10px] font-bold transition-all',
+                'px-3 py-1.5 font-pixel text-[8px] transition-all',
                 matchMode === 'long'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-cfl-bg text-gray-400 hover:text-white',
+                  ? 'bg-cfl-green text-white shadow-green-glow'
+                  : 'bg-cfl-bg text-cfl-text-muted hover:text-white',
                 status === 'racing' && 'opacity-50 cursor-not-allowed'
               )}
             >
@@ -163,10 +163,10 @@ export function Header({ activeTab, onTabChange }: Props) {
               onClick={() => setMatchMode('short')}
               disabled={status === 'racing'}
               className={clsx(
-                'px-2 py-1 text-[10px] font-bold transition-all',
+                'px-3 py-1.5 font-pixel text-[8px] transition-all',
                 matchMode === 'short'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-cfl-bg text-gray-400 hover:text-white',
+                  ? 'bg-cfl-red text-white'
+                  : 'bg-cfl-bg text-cfl-text-muted hover:text-white',
                 status === 'racing' && 'opacity-50 cursor-not-allowed'
               )}
             >
@@ -175,66 +175,66 @@ export function Header({ activeTab, onTabChange }: Props) {
           </div>
 
           {/* Timer */}
-          <div className="flex items-center gap-1.5">
+          <div className="timer-pixel flex items-center gap-2">
             <div
               className={clsx(
-                'w-2 h-2 rounded-full',
+                'w-2.5 h-2.5 rounded-full',
                 status === 'racing'
-                  ? 'bg-green-500 animate-pulse'
+                  ? 'bg-cfl-green animate-pulse shadow-green-glow'
                   : status === 'paused'
-                  ? 'bg-yellow-500'
-                  : 'bg-gray-500'
+                  ? 'bg-cfl-gold'
+                  : 'bg-cfl-text-muted'
               )}
             />
-            <span className="text-base font-mono font-bold text-white">
+            <span className="text-cfl-gold">
               {formatTime(elapsedTime)}
             </span>
           </div>
 
           {/* Play/Pause/Reset */}
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             {status === 'idle' && (
               <button
                 onClick={startRace}
-                className="flex items-center gap-1 px-2.5 py-1 bg-green-600 hover:bg-green-500 rounded-lg text-white text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-cfl-green hover:bg-green-400 rounded-lg text-white font-pixel text-[8px] transition-all shadow-pixel-sm hover:shadow-green-glow"
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
-                <span className="hidden sm:inline">Play</span>
+                <span className="hidden sm:inline">PLAY</span>
               </button>
             )}
 
             {status === 'racing' && (
               <button
                 onClick={pauseRace}
-                className="flex items-center gap-1 px-2.5 py-1 bg-yellow-600 hover:bg-yellow-500 rounded-lg text-white text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-cfl-gold hover:bg-yellow-400 rounded-lg text-black font-pixel text-[8px] transition-all shadow-pixel-sm hover:shadow-gold-glow"
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                 </svg>
-                <span className="hidden sm:inline">Pause</span>
+                <span className="hidden sm:inline">PAUSE</span>
               </button>
             )}
 
             {status === 'paused' && (
               <button
                 onClick={startRace}
-                className="flex items-center gap-1 px-2.5 py-1 bg-green-600 hover:bg-green-500 rounded-lg text-white text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-cfl-green hover:bg-green-400 rounded-lg text-white font-pixel text-[8px] transition-all shadow-pixel-sm hover:shadow-green-glow"
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
-                <span className="hidden sm:inline">Resume</span>
+                <span className="hidden sm:inline">RESUME</span>
               </button>
             )}
 
             {(status === 'racing' || status === 'paused') && (
               <button
                 onClick={resetRace}
-                className="flex items-center gap-1 px-2 py-1 bg-cfl-border hover:bg-gray-700 rounded-lg text-white text-xs transition-all"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-cfl-border hover:bg-cfl-red/80 rounded-lg text-white transition-all shadow-pixel-sm"
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -252,28 +252,28 @@ export function Header({ activeTab, onTabChange }: Props) {
       {activeTab === 'referral' && <div className="flex-1" />}
 
       {/* Right: Tab Navigation */}
-      <div className="flex bg-cfl-card rounded-lg border border-cfl-border overflow-hidden flex-shrink-0">
+      <div className="flex rounded-lg border-2 border-cfl-border overflow-hidden flex-shrink-0 shadow-pixel-sm">
         <button
           onClick={() => onTabChange('race')}
           className={clsx(
-            'px-3 py-1.5 text-xs font-medium transition-colors',
+            'px-4 py-2 font-pixel text-[8px] transition-all',
             activeTab === 'race'
-              ? 'bg-orange-500/20 text-orange-400'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              ? 'bg-cfl-orange text-white shadow-orange-glow'
+              : 'bg-cfl-bg text-cfl-text-muted hover:text-white hover:bg-cfl-border'
           )}
         >
-          Race
+          RACE
         </button>
         <button
           onClick={() => onTabChange('referral')}
           className={clsx(
-            'px-3 py-1.5 text-xs font-medium transition-colors',
+            'px-4 py-2 font-pixel text-[8px] transition-all',
             activeTab === 'referral'
-              ? 'bg-orange-500/20 text-orange-400'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              ? 'bg-cfl-gold text-black shadow-gold-glow'
+              : 'bg-cfl-bg text-cfl-text-muted hover:text-white hover:bg-cfl-border'
           )}
         >
-          Referral
+          GIVEAWAY
         </button>
       </div>
     </header>

@@ -63,7 +63,7 @@ export function Dashboard() {
         {/* Main content area - fills remaining space */}
         <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden min-h-0">
           {/* Unified Race Chart - Longs vs Shorts, biggest % wins */}
-          <div className="flex-1 bg-cfl-card rounded-xl p-3 min-h-0">
+          <div className="flex-1 card-pixel p-3 min-h-0">
             <UnifiedRaceChart
               chartData={chartData}
               positions={positions}
@@ -75,19 +75,19 @@ export function Dashboard() {
           {/* Resize Handle */}
           <div
             onMouseDown={handleMouseDown}
-            className={`h-2 flex items-center justify-center cursor-row-resize group ${
-              isDragging ? 'bg-orange-500/20' : 'hover:bg-gray-700/50'
+            className={`h-3 flex items-center justify-center cursor-row-resize group ${
+              isDragging ? 'bg-cfl-orange/20' : 'hover:bg-cfl-border/50'
             } transition-colors`}
           >
-            <div className={`w-16 h-1 rounded-full ${
-              isDragging ? 'bg-orange-400' : 'bg-gray-600 group-hover:bg-gray-500'
+            <div className={`w-20 h-1.5 rounded-full ${
+              isDragging ? 'bg-cfl-orange' : 'bg-cfl-border group-hover:bg-cfl-text-muted'
             } transition-colors`} />
           </div>
 
           {/* Bottom row - Shorts + Longs + Volatile + Leaderboard */}
           <div style={{ height: bottomHeight }} className="flex gap-2 flex-shrink-0">
             {/* Top Shorts - 5m losers */}
-            <div className="w-[200px] bg-cfl-card rounded-xl p-3 overflow-hidden">
+            <div className="w-[200px] card-pixel p-3 overflow-hidden">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -97,7 +97,7 @@ export function Dashboard() {
             </div>
 
             {/* Top Longs - 5m gainers */}
-            <div className="w-[200px] bg-cfl-card rounded-xl p-3 overflow-hidden">
+            <div className="w-[200px] card-pixel p-3 overflow-hidden">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -107,7 +107,7 @@ export function Dashboard() {
             </div>
 
             {/* Most Volatile - biggest absolute swings */}
-            <div className="w-[200px] bg-cfl-card rounded-xl p-3 overflow-hidden">
+            <div className="w-[200px] card-pixel p-3 overflow-hidden">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -117,7 +117,7 @@ export function Dashboard() {
             </div>
 
             {/* Leaderboard */}
-            <div className="flex-1 bg-cfl-card rounded-xl p-3 overflow-hidden">
+            <div className="flex-1 card-pixel p-3 overflow-hidden">
               <RaceLeaderboard
                 positions={positions}
                 selectedToken={selectedToken}
@@ -131,10 +131,10 @@ export function Dashboard() {
       </main>
 
       {/* Minimal Footer */}
-      <footer className="px-3 py-1.5 border-t border-cfl-border flex-shrink-0">
-        <div className="flex items-center justify-between text-[10px] text-gray-600">
+      <footer className="px-3 py-2 border-t-2 border-cfl-border flex-shrink-0 bg-cfl-card">
+        <div className="flex items-center justify-between font-pixel-body text-sm text-cfl-text-muted">
           <span>CFL Race Tracker</span>
-          <span>Powered by Pyth Network</span>
+          <span className="text-cfl-teal">Powered by Pyth Network</span>
         </div>
       </footer>
     </div>
