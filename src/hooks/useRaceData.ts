@@ -127,28 +127,35 @@ export function useRaceData() {
     };
   }, [status, startTime, fetchPrices, updateElapsedTime]);
 
-  // Generate chart data from position histories
+  // Generate chart data from position histories (limited to last 10 min)
   const chartData = useCallback(() => {
     const data: Array<{ timestamp: number; [key: string]: number }> = [];
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
 
-    // Get all unique timestamps across all tokens
+    // Get all unique timestamps across all tokens (last 10 min only)
     const allTimestamps = new Set<number>();
     for (const pos of positions.values()) {
       for (const point of pos.history) {
-        allTimestamps.add(point.timestamp);
+        if (point.timestamp >= tenMinutesAgo) {
+          allTimestamps.add(point.timestamp);
+        }
       }
     }
 
     // Sort timestamps
     const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
 
+    // Limit to max 300 points for performance (10 min at 2s intervals = 300)
+    const step = Math.max(1, Math.floor(sortedTimestamps.length / 300));
+    const sampledTimestamps = sortedTimestamps.filter((_, i) => i % step === 0);
+
     // Build data points
     const lastValues: Map<string, number> = new Map();
 
-    for (const timestamp of sortedTimestamps) {
+    for (const timestamp of sampledTimestamps) {
       const point: { timestamp: number; [key: string]: number } = { timestamp };
 
-      for (const [mint, pos] of positions) {
+      for (const [, pos] of positions) {
         // Find the position value at or before this timestamp
         const historyPoint = pos.history
           .filter((h) => h.timestamp <= timestamp)

@@ -1,63 +1,67 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { UnifiedRaceChart } from './UnifiedRaceChart';
 import { RaceLeaderboard } from './RaceLeaderboard';
-import { RaceControls } from './RaceControls';
-import { RecentTrades } from './RecentTrades';
 import { AlertPanel } from './AlertPanel';
-import { Header } from './Header';
 import { MostVolatile } from './MostVolatile';
 import { useRaceData } from '@/hooks/useRaceData';
 
 export function Dashboard() {
   const {
-    status,
-    elapsedTime,
     matchMode,
-    selectedTrack,
     positions,
-    recentTrades,
     alerts,
     chartData,
-    startRace,
-    pauseRace,
-    resetRace,
-    setMatchMode,
-    setSelectedTrack,
     dismissAlert,
   } = useRaceData();
 
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
+  const [bottomHeight, setBottomHeight] = useState(200);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const newBottomHeight = containerRect.bottom - e.clientY;
+      // Clamp between 100px and 400px
+      setBottomHeight(Math.min(400, Math.max(100, newBottomHeight)));
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   return (
-    <div className="flex flex-col h-screen bg-cfl-bg overflow-hidden">
-      <Header matchMode={matchMode} />
-
+    <div className="flex flex-col h-full bg-cfl-bg overflow-hidden">
       <main className="flex-1 flex flex-col p-3 gap-2 overflow-hidden min-h-0">
-        {/* Controls + Alerts Row */}
-        <div className="flex items-center gap-3 flex-wrap">
-          <RaceControls
-            status={status}
-            elapsedTime={elapsedTime}
-            matchMode={matchMode}
-            selectedTrack={selectedTrack}
-            onStart={startRace}
-            onPause={pauseRace}
-            onReset={resetRace}
-            onSetMatchMode={setMatchMode}
-            onSetTrack={setSelectedTrack}
-          />
-          {/* Inline Alerts */}
-          {alerts.length > 0 && (
-            <div className="flex-1">
-              <AlertPanel alerts={alerts} onDismiss={dismissAlert} compact />
-            </div>
-          )}
-        </div>
+        {/* Alerts Row */}
+        {alerts.length > 0 && (
+          <div className="flex-shrink-0">
+            <AlertPanel alerts={alerts} onDismiss={dismissAlert} compact />
+          </div>
+        )}
 
         {/* Main content area - fills remaining space */}
-        <div className="flex-1 flex flex-col gap-2 overflow-hidden min-h-0">
+        <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden min-h-0">
           {/* Unified Race Chart - Longs vs Shorts, biggest % wins */}
           <div className="flex-1 bg-cfl-card rounded-xl p-3 min-h-0">
             <UnifiedRaceChart
@@ -68,8 +72,50 @@ export function Dashboard() {
             />
           </div>
 
-          {/* Bottom row - Leaderboard + Most Volatile + Recent Trades */}
-          <div className="h-[200px] flex gap-2 flex-shrink-0">
+          {/* Resize Handle */}
+          <div
+            onMouseDown={handleMouseDown}
+            className={`h-2 flex items-center justify-center cursor-row-resize group ${
+              isDragging ? 'bg-orange-500/20' : 'hover:bg-gray-700/50'
+            } transition-colors`}
+          >
+            <div className={`w-16 h-1 rounded-full ${
+              isDragging ? 'bg-orange-400' : 'bg-gray-600 group-hover:bg-gray-500'
+            } transition-colors`} />
+          </div>
+
+          {/* Bottom row - Shorts + Longs + Volatile + Leaderboard */}
+          <div style={{ height: bottomHeight }} className="flex gap-2 flex-shrink-0">
+            {/* Top Shorts - 5m losers */}
+            <div className="w-[200px] bg-cfl-card rounded-xl p-3 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                filter="short"
+              />
+            </div>
+
+            {/* Top Longs - 5m gainers */}
+            <div className="w-[200px] bg-cfl-card rounded-xl p-3 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                filter="long"
+              />
+            </div>
+
+            {/* Most Volatile - biggest absolute swings */}
+            <div className="w-[200px] bg-cfl-card rounded-xl p-3 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                filter="all"
+              />
+            </div>
+
             {/* Leaderboard */}
             <div className="flex-1 bg-cfl-card rounded-xl p-3 overflow-hidden">
               <RaceLeaderboard
@@ -80,22 +126,6 @@ export function Dashboard() {
                 compact
               />
             </div>
-
-            {/* Most Volatile - Top 5 biggest swings */}
-            <div className="w-[250px] bg-cfl-card rounded-xl p-3 overflow-hidden">
-              <MostVolatile
-                positions={positions}
-                selectedToken={selectedToken}
-                onSelectToken={setSelectedToken}
-              />
-            </div>
-
-            {/* Recent Trades */}
-            {status === 'racing' && recentTrades.length > 0 && (
-              <div className="w-[250px] bg-cfl-card rounded-xl p-2 overflow-hidden">
-                <RecentTrades trades={recentTrades} compact />
-              </div>
-            )}
           </div>
         </div>
       </main>

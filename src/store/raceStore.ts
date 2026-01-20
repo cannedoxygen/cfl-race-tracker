@@ -97,6 +97,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
         sellCount: 0,
         buyRatio: 0.5,
         velocity: 0,
+        volatility5m: 0,
         momentum: 'neutral',
         volumeSpike: false,
         recentVolume: 0,
@@ -127,6 +128,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
         startPrice: 0,
         currentPrice: 0,
         velocity: 0,
+        volatility5m: 0,
         momentum: 'neutral',
       });
     }
@@ -161,6 +163,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
         startPrice: 0,
         currentPrice: 0,
         velocity: 0,
+        volatility5m: 0,
         momentum: 'neutral',
       });
     }
@@ -192,16 +195,32 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       const pos = newPositions.get(update.mint);
       if (!pos) continue;
 
-      // Calculate velocity over 5-minute window
+      // Calculate velocity (net change) over 5-minute window
       const fiveMinutesAgo = now - 5 * 60 * 1000;
       const historicalEntry = pos.history.find(h => h.timestamp >= fiveMinutesAgo) || pos.history[0];
       const basePosition = historicalEntry?.position ?? 0;
       const velocity = update.percentChange - basePosition;
 
+      // Calculate accumulated volatility over 5-minute window
+      // Sum of all absolute changes between consecutive points
+      const recentHistory = pos.history.filter(h => h.timestamp >= fiveMinutesAgo);
+      let volatility5m = 0;
+      for (let i = 1; i < recentHistory.length; i++) {
+        volatility5m += Math.abs(recentHistory[i].position - recentHistory[i - 1].position);
+      }
+      // Add the change from last history point to current update
+      if (recentHistory.length > 0) {
+        volatility5m += Math.abs(update.percentChange - recentHistory[recentHistory.length - 1].position);
+      }
+
       // Determine momentum based on velocity
       let momentum: MomentumSignal = 'neutral';
       if (velocity > 0.1) momentum = velocity > 0.5 ? 'strong_buy' : 'buy';
       else if (velocity < -0.1) momentum = velocity < -0.5 ? 'strong_sell' : 'sell';
+
+      // Trim history to last 10 minutes to prevent memory leak
+      const tenMinutesAgo = now - 10 * 60 * 1000;
+      const trimmedHistory = pos.history.filter(h => h.timestamp >= tenMinutesAgo);
 
       // Update position
       const updatedPosition: RacePosition = {
@@ -212,9 +231,10 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
         boost: update.boost,
         totalChange: update.totalChange, // Total change from race start
         velocity,
+        volatility5m,
         momentum,
         history: [
-          ...pos.history,
+          ...trimmedHistory,
           { timestamp: now, position: update.percentChange },
         ],
         lastTradeTime: now,

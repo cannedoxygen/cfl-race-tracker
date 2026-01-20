@@ -5,10 +5,13 @@ import clsx from 'clsx';
 import Image from 'next/image';
 import { getTrackFromBoost } from '@/lib/tokens';
 
+type VolatileFilter = 'all' | 'long' | 'short';
+
 interface Props {
   positions: RacePosition[];
   onSelectToken: (mint: string | null) => void;
   selectedToken: string | null;
+  filter?: VolatileFilter;
 }
 
 function getTrackColor(track: TrackType): string {
@@ -26,25 +29,60 @@ function getTrackColor(track: TrackType): string {
   }
 }
 
-export function MostVolatile({ positions, onSelectToken, selectedToken }: Props) {
-  // Sort by velocity (absolute value of recent change rate) - most volatile first
-  const sortedByVolatility = [...positions]
-    .sort((a, b) => Math.abs(b.velocity) - Math.abs(a.velocity))
+function getFilterConfig(filter: VolatileFilter) {
+  switch (filter) {
+    case 'long':
+      return {
+        title: 'Top Longs',
+        subtitle: '5m gainers',
+        icon: '↑',
+        iconColor: 'text-green-400',
+        filterFn: (pos: RacePosition) => pos.velocity > 0,
+        sortFn: (a: RacePosition, b: RacePosition) => b.velocity - a.velocity,
+      };
+    case 'short':
+      return {
+        title: 'Top Shorts',
+        subtitle: '5m losers',
+        icon: '↓',
+        iconColor: 'text-red-400',
+        filterFn: (pos: RacePosition) => pos.velocity < 0,
+        sortFn: (a: RacePosition, b: RacePosition) => a.velocity - b.velocity,
+      };
+    default:
+      return {
+        title: 'Most Volatile',
+        subtitle: '5m accumulated',
+        icon: '~',
+        iconColor: 'text-orange-400',
+        filterFn: () => true,
+        sortFn: (a: RacePosition, b: RacePosition) => b.volatility5m - a.volatility5m,
+        useVolatility: true,
+      };
+  }
+}
+
+export function MostVolatile({ positions, onSelectToken, selectedToken, filter = 'all' }: Props) {
+  const config = getFilterConfig(filter);
+
+  const sortedPositions = [...positions]
+    .filter(config.filterFn)
+    .sort(config.sortFn)
     .slice(0, 5);
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-bold text-white flex items-center gap-1">
-          <span className="text-orange-400">~</span> Most Volatile
+          <span className={config.iconColor}>{config.icon}</span> {config.title}
         </h2>
-        <span className="text-[10px] text-orange-400">
-          5m window
+        <span className={clsx('text-[10px]', config.iconColor)}>
+          {config.subtitle}
         </span>
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
-        {sortedByVolatility.map((pos, index) => {
+        {sortedPositions.map((pos, index) => {
           const isSelected = selectedToken === pos.mint;
           const track = pos.boost ? getTrackFromBoost(pos.boost) : 'conservative';
           const trackColor = getTrackColor(track);
@@ -95,25 +133,28 @@ export function MostVolatile({ positions, onSelectToken, selectedToken }: Props)
                 {pos.symbol}
               </span>
 
-              {/* Velocity indicator */}
+              {/* Velocity/Volatility indicator */}
               <div className="flex items-center gap-1">
-                <span className={clsx(
-                  'text-xs font-bold',
-                  isUp ? 'text-green-400' : 'text-red-400'
-                )}>
-                  {isUp ? '+' : '-'}{absVelocity.toFixed(2)}%
-                </span>
-                <span className="text-[10px]">
-                  {absVelocity > 0.5 ? '~' : absVelocity > 0.2 ? '~' : '~'}
-                </span>
+                {filter === 'all' ? (
+                  <span className="text-xs font-bold text-orange-400">
+                    {pos.volatility5m.toFixed(2)}%
+                  </span>
+                ) : (
+                  <span className={clsx(
+                    'text-xs font-bold',
+                    isUp ? 'text-green-400' : 'text-red-400'
+                  )}>
+                    {isUp ? '+' : ''}{pos.velocity.toFixed(2)}%
+                  </span>
+                )}
               </div>
             </button>
           );
         })}
 
-        {positions.length === 0 && (
+        {sortedPositions.length === 0 && (
           <div className="flex flex-col items-center justify-center py-4 text-gray-500">
-            <div className="text-xl mb-1">~</div>
+            <div className="text-xl mb-1">{config.icon}</div>
             <p className="text-[10px]">Waiting for data</p>
           </div>
         )}

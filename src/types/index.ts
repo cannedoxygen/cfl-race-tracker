@@ -71,7 +71,8 @@ export interface RacePosition {
   buyCount: number; // Number of buy transactions
   sellCount: number; // Number of sell transactions
   buyRatio: number; // buys / (buys + sells), 0-1 scale
-  velocity: number; // Rate of change in % over 5-minute window
+  velocity: number; // Net change in % over 5-minute window (for longs/shorts)
+  volatility5m: number; // Accumulated absolute changes over 5-minute window
   momentum: MomentumSignal; // Overall momentum signal
   volumeSpike: boolean; // True if recent volume is abnormally high
   recentVolume: number; // Volume in last 60 seconds
@@ -121,4 +122,29 @@ export interface VolatilityScore {
   currentPrice: number;
   priceHistory: PricePoint[];
   color: string;
+}
+
+// Referral system types
+export interface ReferralEntry {
+  id: string;
+  cflUsername: string;
+  discordUsername?: string;
+  twitterHandle?: string;
+  enteredAt: number; // timestamp
+  weekId: string; // e.g., "2025-W03" for week 3 of 2025
+}
+
+export interface WeeklyDrawing {
+  weekId: string;
+  entries: ReferralEntry[];
+  winner?: ReferralEntry;
+  drawnAt?: number;
+  prize?: string;
+}
+
+export interface ReferralData {
+  referralCode: string;
+  currentWeekId: string;
+  entries: ReferralEntry[];
+  pastDrawings: WeeklyDrawing[];
 }

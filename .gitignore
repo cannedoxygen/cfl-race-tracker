@@ -37,3 +37,9 @@ Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# Data files
+data/
+
+# Supabase
+supabase-schema.sql

@@ -6,3 +6,4 @@ export { RecentTrades } from './RecentTrades';
 export { AlertPanel } from './AlertPanel';
 export { Header } from './Header';
 export { Providers } from './Providers';
+export { ReferralPage } from './ReferralPage';

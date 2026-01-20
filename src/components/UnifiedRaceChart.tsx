@@ -63,11 +63,35 @@ function CustomTooltip({ active, payload, label }: any) {
 
 export function UnifiedRaceChart({ chartData, positions, selectedToken, onSelectToken }: Props) {
   const formatXAxis = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString([], {
-      minute: '2-digit',
-      second: '2-digit',
-    });
+    const date = new Date(timestamp);
+    const minutes = date.getMinutes();
+    const hours = date.getHours();
+    return `${hours}:${minutes.toString().padStart(2, '0')}`;
   };
+
+  // Calculate ticks at 5-minute intervals
+  const xAxisTicks = useMemo(() => {
+    if (chartData.length === 0) return [];
+
+    const firstTime = chartData[0]?.timestamp || Date.now();
+    const lastTime = chartData[chartData.length - 1]?.timestamp || Date.now();
+
+    // Round down to nearest 5 minutes
+    const fiveMin = 5 * 60 * 1000;
+    const startTick = Math.ceil(firstTime / fiveMin) * fiveMin;
+
+    const ticks: number[] = [];
+    for (let tick = startTick; tick <= lastTime; tick += fiveMin) {
+      ticks.push(tick);
+    }
+
+    // Always include at least the first and last if no 5-min ticks
+    if (ticks.length === 0 && chartData.length > 0) {
+      ticks.push(firstTime);
+    }
+
+    return ticks;
+  }, [chartData]);
 
   const formatYAxis = (value: number) => {
     return `${value.toFixed(1)}%`;
@@ -151,6 +175,7 @@ export function UnifiedRaceChart({ chartData, positions, selectedToken, onSelect
               <XAxis
                 dataKey="timestamp"
                 tickFormatter={formatXAxis}
+                ticks={xAxisTicks}
                 stroke="#374151"
                 tick={{ fill: '#6b7280', fontSize: 9 }}
                 axisLine={{ stroke: '#1e1e2e' }}
