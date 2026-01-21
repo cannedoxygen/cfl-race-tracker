@@ -17,7 +17,7 @@ export function Dashboard() {
   } = useRaceData();
 
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
-  const [bottomHeight, setBottomHeight] = useState(200);
+  const [bottomHeight, setBottomHeight] = useState(120);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -33,8 +33,8 @@ export function Dashboard() {
       if (!containerRef.current) return;
       const containerRect = containerRef.current.getBoundingClientRect();
       const newBottomHeight = containerRect.bottom - e.clientY;
-      // Clamp between 100px and 400px
-      setBottomHeight(Math.min(400, Math.max(100, newBottomHeight)));
+      // Clamp between 80px and 250px - keep chart as main focus
+      setBottomHeight(Math.min(250, Math.max(80, newBottomHeight)));
     };
 
     const handleMouseUp = () => {
@@ -63,8 +63,8 @@ export function Dashboard() {
 
         {/* Main content area */}
         <div ref={containerRef} className="flex-1 flex flex-col md:overflow-hidden min-h-0">
-          {/* Unified Race Chart */}
-          <div className="h-[300px] md:h-auto md:flex-1 card-pixel p-2 md:p-3 min-h-0">
+          {/* Unified Race Chart - Main focus, takes most space */}
+          <div className="h-[300px] md:flex-1 card-pixel p-2 md:p-3 min-h-[400px] md:min-h-0">
             <UnifiedRaceChart
               chartData={chartData}
               positions={positions}
@@ -76,66 +76,89 @@ export function Dashboard() {
           {/* Resize Handle - Desktop only */}
           <div
             onMouseDown={handleMouseDown}
-            className={`hidden md:flex h-3 items-center justify-center cursor-row-resize group ${
+            className={`hidden md:flex h-2 items-center justify-center cursor-row-resize group flex-shrink-0 ${
               isDragging ? 'bg-cfl-orange/20' : 'hover:bg-cfl-border/50'
             } transition-colors`}
           >
-            <div className={`w-20 h-1.5 rounded-full ${
+            <div className={`w-20 h-1 rounded-full ${
               isDragging ? 'bg-cfl-orange' : 'bg-cfl-border group-hover:bg-cfl-text-muted'
             } transition-colors`} />
           </div>
 
-          {/* Bottom panels - Mobile: stack vertically, Desktop: horizontal row */}
+          {/* Bottom panels - Desktop: compact horizontal row */}
           <div
-            style={{ height: typeof window !== 'undefined' && window.innerWidth >= 768 ? bottomHeight : 'auto' }}
-            className="flex flex-col md:flex-row gap-2 flex-shrink-0 mt-2 md:mt-0"
+            style={{ height: bottomHeight }}
+            className="hidden md:flex flex-row gap-2 flex-shrink-0"
           >
-            {/* Mobile: 2x2 grid for volatile panels, Desktop: horizontal */}
-            <div className="grid grid-cols-2 md:flex gap-2 md:gap-2">
-              {/* Top Shorts - 5m losers */}
-              <div className="h-[150px] md:h-auto md:w-[200px] card-pixel p-2 md:p-3 overflow-hidden">
-                <MostVolatile
-                  positions={positions}
-                  selectedToken={selectedToken}
-                  onSelectToken={setSelectedToken}
-                  filter="short"
-                />
-              </div>
-
-              {/* Top Longs - 5m gainers */}
-              <div className="h-[150px] md:h-auto md:w-[200px] card-pixel p-2 md:p-3 overflow-hidden">
-                <MostVolatile
-                  positions={positions}
-                  selectedToken={selectedToken}
-                  onSelectToken={setSelectedToken}
-                  filter="long"
-                />
-              </div>
-
-              {/* Most Volatile - biggest absolute swings */}
-              <div className="h-[150px] md:h-auto md:w-[200px] card-pixel p-2 md:p-3 overflow-hidden">
-                <MostVolatile
-                  positions={positions}
-                  selectedToken={selectedToken}
-                  onSelectToken={setSelectedToken}
-                  filter="all"
-                />
-              </div>
-
-              {/* Leaderboard - Mobile: full width below, Desktop: flex-1 */}
-              <div className="h-[150px] md:h-auto md:hidden card-pixel p-2 overflow-hidden">
-                <RaceLeaderboard
-                  positions={positions}
-                  selectedToken={selectedToken}
-                  onSelectToken={setSelectedToken}
-                  matchMode={matchMode}
-                  compact
-                />
-              </div>
+            {/* Top Shorts */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                filter="short"
+              />
             </div>
 
-            {/* Leaderboard - Desktop only (in the row) */}
-            <div className="hidden md:block flex-1 card-pixel p-3 overflow-hidden">
+            {/* Top Longs */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                filter="long"
+              />
+            </div>
+
+            {/* Most Volatile */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                filter="all"
+              />
+            </div>
+
+            {/* Leaderboard */}
+            <div className="flex-1 card-pixel p-2 overflow-hidden">
+              <RaceLeaderboard
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                matchMode={matchMode}
+                compact
+              />
+            </div>
+          </div>
+
+          {/* Mobile panels - stacked vertically */}
+          <div className="flex md:hidden flex-col gap-2 mt-2">
+            <div className="h-[120px] card-pixel p-2 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                filter="short"
+              />
+            </div>
+            <div className="h-[120px] card-pixel p-2 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                filter="long"
+              />
+            </div>
+            <div className="h-[120px] card-pixel p-2 overflow-hidden">
+              <MostVolatile
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                filter="all"
+              />
+            </div>
+            <div className="h-[150px] card-pixel p-2 overflow-hidden">
               <RaceLeaderboard
                 positions={positions}
                 selectedToken={selectedToken}

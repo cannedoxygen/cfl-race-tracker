@@ -41,10 +41,18 @@ html {
 body {
   background: var(--cfl-bg);
   color: var(--cfl-text);
-  font-family: 'VT323', monospace;
-  font-size: 18px; /* VT323 works best slightly larger */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
   overflow-x: hidden;
   max-width: 100vw;
+}
+
+/* Use pixel fonts only on desktop */
+@media (min-width: 768px) {
+  body {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+  }
 }
 
 /* Gradient background effect - CFL style */
@@ -159,18 +167,34 @@ button, .no-select {
   }
 }
 
-/* Pixel font styles */
+/* Pixel font styles - Desktop only */
 .font-pixel {
-  font-family: 'Press Start 2P', cursive;
-  letter-spacing: 0.05em;
+  font-family: inherit;
+  letter-spacing: normal;
+  font-weight: 600;
 }
 
 .font-pixel-body {
-  font-family: 'VT323', monospace;
+  font-family: inherit;
 }
 
 .font-silkscreen {
-  font-family: 'Silkscreen', cursive;
+  font-family: inherit;
+}
+
+@media (min-width: 768px) {
+  .font-pixel {
+    font-family: 'Press Start 2P', cursive;
+    letter-spacing: 0.05em;
+  }
+
+  .font-pixel-body {
+    font-family: 'VT323', monospace;
+  }
+
+  .font-silkscreen {
+    font-family: 'Silkscreen', cursive;
+  }
 }
 
 /* Gold glow text effect */
@@ -181,13 +205,22 @@ button, .no-select {
 
 /* Pixel button styles */
 .btn-pixel {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 10px;
-  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
   border-radius: 8px;
   border: 2px solid transparent;
   transition: all 150ms ease;
   text-transform: uppercase;
+}
+
+@media (min-width: 768px) {
+  .btn-pixel {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    padding: 10px 16px;
+  }
 }
 
 .btn-pixel:hover {
@@ -232,11 +265,21 @@ button, .no-select {
 
 /* Timer display - retro digital style */
 .timer-pixel {
-  font-family: 'Press Start 2P', cursive;
-  font-size: 14px;
-  letter-spacing: 0.1em;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   background: rgba(0, 0, 0, 0.3);
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-radius: 6px;
   border: 1px solid var(--cfl-border);
+}
+
+@media (min-width: 768px) {
+  .timer-pixel {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    padding: 6px 12px;
+  }
 }
