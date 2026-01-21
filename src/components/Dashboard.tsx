@@ -52,7 +52,8 @@ export function Dashboard() {
 
   return (
     <div className="flex flex-col h-full bg-cfl-bg overflow-hidden">
-      <main className="flex-1 flex flex-col p-3 gap-2 overflow-hidden min-h-0">
+      {/* Mobile: scrollable, Desktop: fixed layout */}
+      <main className="flex-1 flex flex-col p-2 md:p-3 gap-2 overflow-y-auto md:overflow-hidden min-h-0">
         {/* Alerts Row */}
         {alerts.length > 0 && (
           <div className="flex-shrink-0">
@@ -60,10 +61,10 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* Main content area - fills remaining space */}
-        <div ref={containerRef} className="flex-1 flex flex-col overflow-hidden min-h-0">
-          {/* Unified Race Chart - Longs vs Shorts, biggest % wins */}
-          <div className="flex-1 card-pixel p-3 min-h-0">
+        {/* Main content area */}
+        <div ref={containerRef} className="flex-1 flex flex-col md:overflow-hidden min-h-0">
+          {/* Unified Race Chart */}
+          <div className="h-[300px] md:h-auto md:flex-1 card-pixel p-2 md:p-3 min-h-0">
             <UnifiedRaceChart
               chartData={chartData}
               positions={positions}
@@ -72,10 +73,10 @@ export function Dashboard() {
             />
           </div>
 
-          {/* Resize Handle */}
+          {/* Resize Handle - Desktop only */}
           <div
             onMouseDown={handleMouseDown}
-            className={`h-3 flex items-center justify-center cursor-row-resize group ${
+            className={`hidden md:flex h-3 items-center justify-center cursor-row-resize group ${
               isDragging ? 'bg-cfl-orange/20' : 'hover:bg-cfl-border/50'
             } transition-colors`}
           >
@@ -84,40 +85,57 @@ export function Dashboard() {
             } transition-colors`} />
           </div>
 
-          {/* Bottom row - Shorts + Longs + Volatile + Leaderboard */}
-          <div style={{ height: bottomHeight }} className="flex gap-2 flex-shrink-0">
-            {/* Top Shorts - 5m losers */}
-            <div className="w-[200px] card-pixel p-3 overflow-hidden">
-              <MostVolatile
-                positions={positions}
-                selectedToken={selectedToken}
-                onSelectToken={setSelectedToken}
-                filter="short"
-              />
+          {/* Bottom panels - Mobile: stack vertically, Desktop: horizontal row */}
+          <div
+            style={{ height: typeof window !== 'undefined' && window.innerWidth >= 768 ? bottomHeight : 'auto' }}
+            className="flex flex-col md:flex-row gap-2 flex-shrink-0 mt-2 md:mt-0"
+          >
+            {/* Mobile: 2x2 grid for volatile panels, Desktop: horizontal */}
+            <div className="grid grid-cols-2 md:flex gap-2 md:gap-2">
+              {/* Top Shorts - 5m losers */}
+              <div className="h-[150px] md:h-auto md:w-[200px] card-pixel p-2 md:p-3 overflow-hidden">
+                <MostVolatile
+                  positions={positions}
+                  selectedToken={selectedToken}
+                  onSelectToken={setSelectedToken}
+                  filter="short"
+                />
+              </div>
+
+              {/* Top Longs - 5m gainers */}
+              <div className="h-[150px] md:h-auto md:w-[200px] card-pixel p-2 md:p-3 overflow-hidden">
+                <MostVolatile
+                  positions={positions}
+                  selectedToken={selectedToken}
+                  onSelectToken={setSelectedToken}
+                  filter="long"
+                />
+              </div>
+
+              {/* Most Volatile - biggest absolute swings */}
+              <div className="h-[150px] md:h-auto md:w-[200px] card-pixel p-2 md:p-3 overflow-hidden">
+                <MostVolatile
+                  positions={positions}
+                  selectedToken={selectedToken}
+                  onSelectToken={setSelectedToken}
+                  filter="all"
+                />
+              </div>
+
+              {/* Leaderboard - Mobile: full width below, Desktop: flex-1 */}
+              <div className="h-[150px] md:h-auto md:hidden card-pixel p-2 overflow-hidden">
+                <RaceLeaderboard
+                  positions={positions}
+                  selectedToken={selectedToken}
+                  onSelectToken={setSelectedToken}
+                  matchMode={matchMode}
+                  compact
+                />
+              </div>
             </div>
 
-            {/* Top Longs - 5m gainers */}
-            <div className="w-[200px] card-pixel p-3 overflow-hidden">
-              <MostVolatile
-                positions={positions}
-                selectedToken={selectedToken}
-                onSelectToken={setSelectedToken}
-                filter="long"
-              />
-            </div>
-
-            {/* Most Volatile - biggest absolute swings */}
-            <div className="w-[200px] card-pixel p-3 overflow-hidden">
-              <MostVolatile
-                positions={positions}
-                selectedToken={selectedToken}
-                onSelectToken={setSelectedToken}
-                filter="all"
-              />
-            </div>
-
-            {/* Leaderboard */}
-            <div className="flex-1 card-pixel p-3 overflow-hidden">
+            {/* Leaderboard - Desktop only (in the row) */}
+            <div className="hidden md:block flex-1 card-pixel p-3 overflow-hidden">
               <RaceLeaderboard
                 positions={positions}
                 selectedToken={selectedToken}

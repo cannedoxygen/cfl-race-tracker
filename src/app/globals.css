@@ -35,6 +35,7 @@
 
 html {
   color-scheme: dark;
+  overflow-x: hidden;
 }
 
 body {
@@ -42,6 +43,8 @@ body {
   color: var(--cfl-text);
   font-family: 'VT323', monospace;
   font-size: 18px; /* VT323 works best slightly larger */
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* Gradient background effect - CFL style */
