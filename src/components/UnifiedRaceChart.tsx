@@ -12,6 +12,62 @@ import {
 import { RacePosition } from '@/types';
 import clsx from 'clsx';
 
+// Custom dot component that shows token logo at the line tip
+function TokenDot({ cx, cy, payload, dataKey, index, data, position }: any) {
+  // Only render on the last data point
+  if (!data || index !== data.length - 1) return null;
+  if (!cx || !cy || isNaN(cx) || isNaN(cy)) return null;
+
+  const size = 20;
+  const halfSize = size / 2;
+
+  return (
+    <g>
+      {/* Outer glow circle */}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={halfSize + 2}
+        fill={position?.color || '#fff'}
+        fillOpacity={0.3}
+      />
+      {/* Main circle background */}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={halfSize}
+        fill="#161b22"
+        stroke={position?.color || '#fff'}
+        strokeWidth={2}
+      />
+      {/* Token logo or symbol */}
+      {position?.logoURI ? (
+        <image
+          href={position.logoURI}
+          x={cx - halfSize + 3}
+          y={cy - halfSize + 3}
+          width={size - 6}
+          height={size - 6}
+          clipPath={`circle(${(size - 6) / 2}px)`}
+          style={{ borderRadius: '50%' }}
+        />
+      ) : (
+        <text
+          x={cx}
+          y={cy}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill={position?.color || '#fff'}
+          fontSize={7}
+          fontFamily="'Press Start 2P', cursive"
+        >
+          {dataKey?.slice(0, 2) || '??'}
+        </text>
+      )}
+    </g>
+  );
+}
+
 interface Props {
   chartData: Array<{ timestamp: number; [key: string]: number }>;
   positions: RacePosition[];
@@ -147,20 +203,20 @@ export function UnifiedRaceChart({ chartData, positions, selectedToken, onSelect
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between mb-2 flex-shrink-0">
-        <h2 className="text-sm font-bold text-white">
-          RACE TO VOLATILITY
+        <h2 className="font-pixel text-[10px] text-white flex items-center gap-2">
+          <span className="text-cfl-gold">🏁</span> RACE TO VOLATILITY
         </h2>
-        <div className="flex items-center gap-2 text-[10px]">
+        <div className="flex items-center gap-3 font-pixel-body text-sm">
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500"></span>
-            <span className="text-green-400">Long (pump)</span>
+            <span className="w-2 h-2 rounded-full bg-cfl-green"></span>
+            <span className="text-cfl-green">Long</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-red-500"></span>
-            <span className="text-red-400">Short (dump)</span>
+            <span className="w-2 h-2 rounded-full bg-cfl-red"></span>
+            <span className="text-cfl-red">Short</span>
           </span>
-          <span className="text-gray-500">|</span>
-          <span className="text-yellow-400">Biggest % wins</span>
+          <span className="text-cfl-border">|</span>
+          <span className="text-cfl-gold">Biggest % wins</span>
         </div>
       </div>
 
@@ -197,6 +253,7 @@ export function UnifiedRaceChart({ chartData, positions, selectedToken, onSelect
               {/* Token lines - top movers, all racing UP */}
               {topMovers.map((pos) => {
                 const isLong = pos.position >= 0;
+                const isVisible = selectedToken === null || selectedToken === pos.mint;
                 return (
                   <Line
                     key={pos.symbol}
@@ -204,10 +261,15 @@ export function UnifiedRaceChart({ chartData, positions, selectedToken, onSelect
                     dataKey={pos.symbol}
                     stroke={pos.color}
                     strokeWidth={selectedToken === pos.mint ? 3 : 1.5}
-                    strokeOpacity={
-                      selectedToken === null || selectedToken === pos.mint ? 1 : 0.2
-                    }
-                    dot={false}
+                    strokeOpacity={isVisible ? 1 : 0.2}
+                    dot={(props: any) => (
+                      <TokenDot
+                        {...props}
+                        data={transformedChartData}
+                        position={pos}
+                      />
+                    )}
+                    activeDot={false}
                     animationDuration={300}
                   />
                 );
@@ -215,11 +277,11 @@ export function UnifiedRaceChart({ chartData, positions, selectedToken, onSelect
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-cfl-text-muted">
             <div className="text-center">
-              <div className="text-3xl mb-2">🏁</div>
-              <p className="text-sm">Press Play to start the race</p>
-              <p className="text-[10px] text-gray-600 mt-1">All tokens race UP - biggest % wins</p>
+              <div className="text-4xl mb-3">🏁</div>
+              <p className="font-pixel text-[10px]">PRESS PLAY TO START</p>
+              <p className="font-pixel-body text-sm mt-2">All tokens race UP - biggest % wins</p>
             </div>
           </div>
         )}
@@ -227,7 +289,7 @@ export function UnifiedRaceChart({ chartData, positions, selectedToken, onSelect
 
       {/* Leaderboard - sorted by absolute %, all racing UP */}
       <div className="mt-2 flex-shrink-0">
-        <div className="text-[10px] text-gray-500 mb-1">Race Leaders</div>
+        <div className="font-pixel text-[8px] text-cfl-text-muted mb-2">RACE LEADERS</div>
         <div className="flex flex-wrap gap-1.5">
           {sortedPositions.slice(0, 8).map((pos, index) => {
             const isLong = pos.position >= 0;
@@ -239,28 +301,30 @@ export function UnifiedRaceChart({ chartData, positions, selectedToken, onSelect
                   onSelectToken(selectedToken === pos.mint ? null : pos.mint)
                 }
                 className={clsx(
-                  'flex items-center gap-1.5 px-2 py-1 rounded text-[10px] transition-all border',
+                  'flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all border-2',
                   selectedToken === pos.mint
-                    ? 'ring-2 ring-yellow-400'
-                    : 'hover:opacity-100 opacity-90',
-                  'bg-gray-800/50 border-gray-600/50'
+                    ? 'ring-2 ring-cfl-gold shadow-gold-glow'
+                    : 'hover:border-cfl-text-muted',
+                  'bg-cfl-bg/50 border-cfl-border'
                 )}
               >
-                <span className="font-bold text-yellow-400">#{index + 1}</span>
+                <span className="font-pixel text-[7px] text-cfl-gold">#{index + 1}</span>
                 <span
-                  className="font-medium"
+                  className="font-pixel-body text-sm"
                   style={{ color: pos.color }}
                 >
                   {pos.symbol}
                 </span>
-                <span className="text-yellow-400 font-bold">
+                <span className="font-pixel text-[8px] text-cfl-gold">
                   {absValue.toFixed(2)}%
                 </span>
                 <span className={clsx(
-                  'text-[8px] px-1 rounded',
-                  isLong ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                  'font-pixel text-[6px] px-1 py-0.5 rounded border',
+                  isLong
+                    ? 'bg-cfl-green/20 text-cfl-green border-cfl-green/30'
+                    : 'bg-cfl-red/20 text-cfl-red border-cfl-red/30'
                 )}>
-                  {isLong ? 'LONG' : 'SHORT'}
+                  {isLong ? 'L' : 'S'}
                 </span>
               </button>
             );

@@ -40,7 +40,6 @@ export function Header({ activeTab, onTabChange }: Props) {
     startRace,
     pauseRace,
     resetRace,
-    setMatchMode,
     setSelectedTrack,
   } = useRaceStore();
 
@@ -142,36 +141,6 @@ export function Header({ activeTab, onTabChange }: Props) {
                 {track.label}
               </button>
             ))}
-          </div>
-
-          {/* Long/Short Toggle */}
-          <div className="flex rounded-lg overflow-hidden border-2 border-cfl-border shadow-pixel-sm">
-            <button
-              onClick={() => setMatchMode('long')}
-              disabled={status === 'racing'}
-              className={clsx(
-                'px-3 py-1.5 font-pixel text-[8px] transition-all',
-                matchMode === 'long'
-                  ? 'bg-cfl-green text-white shadow-green-glow'
-                  : 'bg-cfl-bg text-cfl-text-muted hover:text-white',
-                status === 'racing' && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              LONG
-            </button>
-            <button
-              onClick={() => setMatchMode('short')}
-              disabled={status === 'racing'}
-              className={clsx(
-                'px-3 py-1.5 font-pixel text-[8px] transition-all',
-                matchMode === 'short'
-                  ? 'bg-cfl-red text-white'
-                  : 'bg-cfl-bg text-cfl-text-muted hover:text-white',
-                status === 'racing' && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              SHORT
-            </button>
           </div>
 
           {/* Timer */}
