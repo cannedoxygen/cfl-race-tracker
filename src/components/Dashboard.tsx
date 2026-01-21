@@ -132,9 +132,9 @@ export function Dashboard() {
             </div>
           </div>
 
-          {/* Mobile panels - stacked vertically */}
+          {/* Mobile panels - stacked vertically, auto height, scrollable */}
           <div className="flex md:hidden flex-col gap-2 mt-2">
-            <div className="h-[120px] card-pixel p-2 overflow-hidden">
+            <div className="min-h-[150px] card-pixel p-3">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -142,7 +142,7 @@ export function Dashboard() {
                 filter="short"
               />
             </div>
-            <div className="h-[120px] card-pixel p-2 overflow-hidden">
+            <div className="min-h-[150px] card-pixel p-3">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -150,7 +150,7 @@ export function Dashboard() {
                 filter="long"
               />
             </div>
-            <div className="h-[120px] card-pixel p-2 overflow-hidden">
+            <div className="min-h-[150px] card-pixel p-3">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -158,7 +158,7 @@ export function Dashboard() {
                 filter="all"
               />
             </div>
-            <div className="h-[150px] card-pixel p-2 overflow-hidden">
+            <div className="min-h-[200px] card-pixel p-3">
               <RaceLeaderboard
                 positions={positions}
                 selectedToken={selectedToken}
