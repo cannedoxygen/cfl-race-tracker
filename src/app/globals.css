@@ -16,34 +16,80 @@
 }
 
 .wallet-adapter-modal-wrapper {
-  background: rgba(13, 17, 23, 0.95) !important;
+  background: rgba(13, 17, 23, 0.9) !important;
+  backdrop-filter: blur(8px) !important;
 }
 
 .wallet-adapter-modal-container {
   background: #161b22 !important;
   border: 2px solid #30363d !important;
-  border-radius: 12px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  max-width: 380px !important;
 }
 
 .wallet-adapter-modal-title {
-  font-family: 'Press Start 2P', cursive !important;
-  font-size: 10px !important;
+  font-family: 'VT323', monospace !important;
+  font-size: 20px !important;
   color: #fbbf24 !important;
+  letter-spacing: 0.05em !important;
+}
+
+.wallet-adapter-modal-list {
+  margin: 0 !important;
+  padding: 0 8px !important;
 }
 
 .wallet-adapter-modal-list li {
-  background: #0d1117 !important;
-  border: 1px solid #30363d !important;
-  border-radius: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid #30363d !important;
+  padding: 12px 8px !important;
+  margin: 0 !important;
+}
+
+.wallet-adapter-modal-list li:last-child {
+  border-bottom: none !important;
 }
 
 .wallet-adapter-modal-list li:hover {
-  background: #1c2128 !important;
-  border-color: #a855f7 !important;
+  background: rgba(168, 85, 247, 0.1) !important;
+  border-color: #30363d !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background: transparent !important;
+  padding: 0 !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  font-family: 'VT323', monospace !important;
+  font-size: 18px !important;
+  color: #e6edf3 !important;
+  width: 100% !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button:hover {
+  background: transparent !important;
+  color: #a855f7 !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button img,
+.wallet-adapter-modal-list .wallet-adapter-button-start-icon {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
 }
 
 .wallet-adapter-modal-list-more {
   color: #8b949e !important;
+  font-family: 'VT323', monospace !important;
+  font-size: 16px !important;
+  padding: 12px !important;
+}
+
+.wallet-adapter-modal-list-more:hover {
+  color: #a855f7 !important;
 }
 
 .wallet-adapter-modal-list-more svg {
@@ -52,6 +98,24 @@
 
 .wallet-adapter-button-trigger {
   background: transparent !important;
+}
+
+.wallet-adapter-modal-button-close {
+  background: #30363d !important;
+  border-radius: 8px !important;
+  transition: all 150ms ease !important;
+}
+
+.wallet-adapter-modal-button-close:hover {
+  background: #f85149 !important;
+}
+
+.wallet-adapter-modal-button-close svg {
+  fill: #8b949e !important;
+}
+
+.wallet-adapter-modal-button-close:hover svg {
+  fill: #ffffff !important;
 }
 
 /* Google Fonts - Pixel fonts for CFL aesthetic */
