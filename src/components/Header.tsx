@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useRaceStore } from '@/store/raceStore';
 import { TrackType } from '@/types';
@@ -37,8 +37,45 @@ export function Header({ activeTab, onTabChange }: Props) {
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [checkedWallet, setCheckedWallet] = useState<string | null>(null);
 
-  const { publicKey } = useWallet();
+  const { publicKey, connected } = useWallet();
+
+  // Auto-check subscription when wallet connects
+  useEffect(() => {
+    const checkSub = async () => {
+      if (!publicKey) {
+        setIsSubscribed(false);
+        setCheckedWallet(null);
+        return;
+      }
+
+      const walletStr = publicKey.toBase58();
+
+      // Don't re-check the same wallet
+      if (checkedWallet === walletStr) return;
+
+      try {
+        console.log('Checking subscription for:', walletStr);
+        const response = await fetch(`/api/subscription?wallet=${walletStr}`);
+        const data = await response.json();
+        console.log('Subscription response:', data);
+
+        if (data.active) {
+          setIsSubscribed(true);
+        } else {
+          setIsSubscribed(false);
+        }
+        setCheckedWallet(walletStr);
+      } catch (err) {
+        console.error('Failed to check subscription:', err);
+      }
+    };
+
+    if (connected && publicKey) {
+      checkSub();
+    }
+  }, [connected, publicKey, checkedWallet]);
 
   const copyToClipboard = async (text: string, item: string) => {
     try {
@@ -79,7 +116,7 @@ export function Header({ activeTab, onTabChange }: Props) {
       return;
     }
 
-    // Check subscription status
+    // Double-check subscription (in case state is stale)
     if (publicKey) {
       try {
         const response = await fetch(
@@ -89,6 +126,7 @@ export function Header({ activeTab, onTabChange }: Props) {
 
         if (data.active) {
           setIsSubscribed(true);
+          setCheckedWallet(publicKey.toBase58());
           startRace();
           return;
         }
