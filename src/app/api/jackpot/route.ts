@@ -1,33 +1,24 @@
 import { NextResponse } from 'next/server';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { supabase } from '@/lib/supabase';
+
+const JACKPOT_WALLET = '5bY2BoRtUjEmDpTtRv6Z5CGWg3WW7WDEqXM4mnnLKEhd';
+const RPC_ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
 
 export async function GET() {
   try {
-    // Get jackpot total
-    let { data: jackpotData, error: jackpotError } = await supabase
-      .from('jackpot')
-      .select('total_lamports')
-      .eq('id', 1)
-      .single();
-
-    if (jackpotError) {
-      console.error('Failed to fetch jackpot:', jackpotError);
-
-      // Try to create the row if it doesn't exist
-      if (jackpotError.code === 'PGRST116') {
-        const { error: insertError } = await supabase
-          .from('jackpot')
-          .insert({ id: 1, total_lamports: 0 });
-
-        if (insertError) {
-          console.error('Failed to create jackpot row:', insertError);
-        } else {
-          jackpotData = { total_lamports: 0 };
-        }
-      }
+    // Get actual on-chain balance of jackpot wallet
+    let onChainBalance = 0;
+    try {
+      const connection = new Connection(RPC_ENDPOINT, 'confirmed');
+      const jackpotPubkey = new PublicKey(JACKPOT_WALLET);
+      onChainBalance = await connection.getBalance(jackpotPubkey);
+      console.log('Jackpot on-chain balance:', onChainBalance, 'lamports');
+    } catch (rpcError) {
+      console.error('Failed to fetch on-chain balance:', rpcError);
     }
 
-    // Get top users by subscription count
+    // Get top users by subscription count from database
     let { data: usersData, error: usersError } = await supabase
       .from('users')
       .select('wallet_address, subscription_count')
@@ -38,16 +29,10 @@ export async function GET() {
       console.error('Failed to fetch users:', usersError);
     }
 
-    // Also get all subscriptions for backup calculations
+    // Also get all subscriptions for user calculations if users table is empty
     const { data: subsData } = await supabase
       .from('subscriptions')
       .select('wallet_address, amount_lamports');
-
-    // Calculate jackpot from subscriptions (0.01 SOL = 10_000_000 lamports per sub)
-    const calculatedJackpot = (subsData?.length || 0) * 10_000_000;
-
-    // Use the higher value (in case jackpot table wasn't updated)
-    const finalJackpot = Math.max(jackpotData?.total_lamports || 0, calculatedJackpot);
 
     // If users table is empty but we have subscriptions, compute from subscriptions
     if ((!usersData || usersData.length === 0) && subsData && subsData.length > 0) {
@@ -65,15 +50,12 @@ export async function GET() {
     }
 
     console.log('Jackpot API response:', {
-      tableValue: jackpotData?.total_lamports,
-      calculatedFromSubs: calculatedJackpot,
-      subsCount: subsData?.length,
-      finalJackpot,
+      onChainBalance,
       usersCount: usersData?.length
     });
 
     return NextResponse.json({
-      totalLamports: finalJackpot,
+      totalLamports: onChainBalance,
       topUsers: usersData || [],
     });
   } catch (error) {
