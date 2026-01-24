@@ -238,7 +238,7 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
               </div>
             )}
 
-            {/* Buttons */}
+            {/* Buttons - Always show all 3 options */}
             <div className="space-y-2">
               <button
                 onClick={handleContinue}
@@ -252,14 +252,12 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
               >
                 MAYBE LATER
               </button>
-              {connected && (
-                <button
-                  onClick={checkExistingSubscription}
-                  className="w-full py-2 px-4 text-cfl-teal hover:text-cfl-teal/80 font-pixel text-[7px] transition-all underline"
-                >
-                  CHECK IF ALREADY PAID
-                </button>
-              )}
+              <button
+                onClick={connected ? checkExistingSubscription : () => setVisible(true)}
+                className="w-full py-2 px-4 bg-cfl-teal/20 border border-cfl-teal/50 text-cfl-teal hover:bg-cfl-teal/30 font-pixel text-[7px] rounded-lg transition-all"
+              >
+                {connected ? 'CONFIRM PAYMENT' : 'CONNECT TO CHECK'}
+              </button>
             </div>
           </>
         )}
