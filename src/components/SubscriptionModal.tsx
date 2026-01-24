@@ -77,7 +77,7 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: TREASURY_ADDRESS,
+          toPubkey: TREASURY_ADDRESS.value,
           lamports: TREASURY_AMOUNT_LAMPORTS,
         })
       );
@@ -86,7 +86,7 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: JACKPOT_ADDRESS,
+          toPubkey: JACKPOT_ADDRESS.value,
           lamports: JACKPOT_AMOUNT_LAMPORTS,
         })
       );

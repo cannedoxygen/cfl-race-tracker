@@ -1,13 +1,36 @@
 import { PublicKey } from '@solana/web3.js';
 
-// Wallet addresses
-export const TREASURY_ADDRESS = new PublicKey(
-  process.env.NEXT_PUBLIC_TREASURY_ADDRESS || '8VdX3RKQSTa98vaJsQiMoktcjYXNwaRcM3144KuodPcD'
-);
+// Wallet addresses - hardcoded to avoid build-time env var issues
+const TREASURY_ADDRESS_STRING = '8VdX3RKQSTa98vaJsQiMoktcjYXNwaRcM3144KuodPcD';
+const JACKPOT_ADDRESS_STRING = '5bY2BoRtUjEmDpTtRv6Z5CGWg3WW7WDEqXM4mnnLKEhd';
 
-export const JACKPOT_ADDRESS = new PublicKey(
-  process.env.NEXT_PUBLIC_JACKPOT_ADDRESS || '5bY2BoRtUjEmDpTtRv6Z5CGWg3WW7WDEqXM4mnnLKEhd'
-);
+// Lazy-loaded PublicKey instances
+let _treasuryAddress: PublicKey | null = null;
+let _jackpotAddress: PublicKey | null = null;
+
+export const TREASURY_ADDRESS = {
+  get value(): PublicKey {
+    if (!_treasuryAddress) {
+      _treasuryAddress = new PublicKey(TREASURY_ADDRESS_STRING);
+    }
+    return _treasuryAddress;
+  },
+  toBase58(): string {
+    return TREASURY_ADDRESS_STRING;
+  }
+};
+
+export const JACKPOT_ADDRESS = {
+  get value(): PublicKey {
+    if (!_jackpotAddress) {
+      _jackpotAddress = new PublicKey(JACKPOT_ADDRESS_STRING);
+    }
+    return _jackpotAddress;
+  },
+  toBase58(): string {
+    return JACKPOT_ADDRESS_STRING;
+  }
+};
 
 // Subscription cost in SOL
 export const SUBSCRIPTION_COST_SOL = 0.02;
