@@ -40,25 +40,45 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
   // Reset state when modal opens and check subscription
   useEffect(() => {
     if (isOpen) {
-      setState('info');
       setError(null);
       setAlreadyPaid(false);
-      // Auto-check if connected
+
+      // Always auto-check if wallet is connected
       if (connected && publicKey) {
+        // Show checking state immediately
+        setState('checking');
         checkExistingSubscription();
+      } else {
+        setState('info');
       }
     }
-  }, [isOpen, connected, publicKey]);
+  }, [isOpen]); // Only depend on isOpen to avoid re-running
+
+  // Also check when wallet connects while modal is open
+  useEffect(() => {
+    if (isOpen && connected && publicKey && state === 'info') {
+      setState('checking');
+      checkExistingSubscription();
+    }
+  }, [connected, publicKey]);
 
   const checkExistingSubscription = async () => {
-    if (!publicKey) return;
+    if (!publicKey) {
+      setState('info');
+      return;
+    }
 
     setState('checking');
     try {
-      const response = await fetch(`/api/subscription?wallet=${publicKey.toBase58()}`);
+      const walletAddress = publicKey.toBase58();
+      console.log('Modal: Checking subscription for:', walletAddress);
+
+      const response = await fetch(`/api/subscription?wallet=${walletAddress}`);
       const data = await response.json();
+      console.log('Modal: Subscription check result:', data);
 
       if (data.active) {
+        console.log('Modal: User has active subscription, auto-proceeding');
         setAlreadyPaid(true);
         // Auto-proceed if already paid
         onSuccess();
@@ -226,20 +246,20 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
               >
                 {connected ? 'PAY & START' : 'CONNECT & PAY'}
               </button>
+              <button
+                onClick={onClose}
+                className="w-full py-2 px-4 bg-transparent border border-cfl-border text-cfl-text-muted hover:text-white font-pixel text-[7px] rounded-lg transition-all"
+              >
+                MAYBE LATER
+              </button>
               {connected && (
                 <button
                   onClick={checkExistingSubscription}
-                  className="w-full py-2 px-4 bg-cfl-teal/20 border border-cfl-teal/50 text-cfl-teal hover:bg-cfl-teal/30 font-pixel text-[7px] rounded-lg transition-all"
+                  className="w-full py-2 px-4 text-cfl-teal hover:text-cfl-teal/80 font-pixel text-[7px] transition-all underline"
                 >
                   CHECK IF ALREADY PAID
                 </button>
               )}
-              <button
-                onClick={onClose}
-                className="w-full py-2 px-4 bg-transparent border border-cfl-border text-cfl-text-muted hover:text-white font-pixel-body text-xs rounded-lg transition-all"
-              >
-                Maybe Later
-              </button>
             </div>
           </>
         )}

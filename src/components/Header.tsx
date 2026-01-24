@@ -36,6 +36,7 @@ export function Header({ activeTab, onTabChange }: Props) {
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isCheckingSubscription, setIsCheckingSubscription] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [checkedWallet, setCheckedWallet] = useState<string | null>(null);
 
@@ -55,11 +56,12 @@ export function Header({ activeTab, onTabChange }: Props) {
       // Don't re-check the same wallet
       if (checkedWallet === walletStr) return;
 
+      setIsCheckingSubscription(true);
       try {
-        console.log('Checking subscription for:', walletStr);
+        console.log('Header: Checking subscription for:', walletStr);
         const response = await fetch(`/api/subscription?wallet=${walletStr}`);
         const data = await response.json();
-        console.log('Subscription response:', data);
+        console.log('Header: Subscription response:', data);
 
         if (data.active) {
           setIsSubscribed(true);
@@ -69,11 +71,16 @@ export function Header({ activeTab, onTabChange }: Props) {
         setCheckedWallet(walletStr);
       } catch (err) {
         console.error('Failed to check subscription:', err);
+      } finally {
+        setIsCheckingSubscription(false);
       }
     };
 
     if (connected && publicKey) {
       checkSub();
+    } else {
+      setIsSubscribed(false);
+      setCheckedWallet(null);
     }
   }, [connected, publicKey, checkedWallet]);
 
@@ -116,22 +123,28 @@ export function Header({ activeTab, onTabChange }: Props) {
       return;
     }
 
-    // Double-check subscription (in case state is stale)
+    // Always do a fresh check when PLAY is clicked
     if (publicKey) {
+      setIsCheckingSubscription(true);
       try {
+        console.log('Play click: Checking subscription for:', publicKey.toBase58());
         const response = await fetch(
           `/api/subscription?wallet=${publicKey.toBase58()}`
         );
         const data = await response.json();
+        console.log('Play click: Subscription check result:', data);
 
         if (data.active) {
           setIsSubscribed(true);
           setCheckedWallet(publicKey.toBase58());
+          setIsCheckingSubscription(false);
           startRace();
           return;
         }
       } catch (err) {
         console.error('Failed to check subscription:', err);
+      } finally {
+        setIsCheckingSubscription(false);
       }
     }
 
@@ -199,12 +212,22 @@ export function Header({ activeTab, onTabChange }: Props) {
             {status === 'idle' && (
               <button
                 onClick={handlePlayClick}
-                className="flex items-center gap-1 px-2 py-1.5 bg-cfl-green hover:bg-green-400 rounded-lg text-white font-pixel text-[7px] transition-all shadow-pixel-sm"
+                disabled={isCheckingSubscription}
+                className={clsx(
+                  "flex items-center gap-1 px-2 py-1.5 rounded-lg text-white font-pixel text-[7px] transition-all shadow-pixel-sm",
+                  isCheckingSubscription
+                    ? "bg-cfl-border cursor-wait"
+                    : "bg-cfl-green hover:bg-green-400"
+                )}
               >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                <span className="hidden sm:inline">PLAY</span>
+                {isCheckingSubscription ? (
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+                <span className="hidden sm:inline">{isCheckingSubscription ? 'CHECKING...' : 'PLAY'}</span>
               </button>
             )}
 
