@@ -256,7 +256,7 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
                 onClick={connected ? checkExistingSubscription : () => setVisible(true)}
                 className="w-full py-2 px-4 bg-cfl-teal/20 border border-cfl-teal/50 text-cfl-teal hover:bg-cfl-teal/30 font-pixel text-[7px] rounded-lg transition-all"
               >
-                {connected ? 'CONFIRM PAYMENT' : 'CONNECT TO CHECK'}
+                {connected ? 'ALREADY PAID? TAP HERE' : 'CONNECT TO CHECK'}
               </button>
             </div>
           </>
