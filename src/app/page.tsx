@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Dashboard, ReferralPage, Header } from '@/components';
+import { Dashboard, ReferralPage, Header, JackpotDisplay } from '@/components';
 
-type Tab = 'race' | 'referral';
+type Tab = 'race' | 'jackpot' | 'referral';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('race');
@@ -13,7 +13,9 @@ export default function Home() {
       <Header activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === 'race' ? <Dashboard /> : <ReferralPage />}
+        {activeTab === 'race' && <Dashboard />}
+        {activeTab === 'jackpot' && <JackpotDisplay />}
+        {activeTab === 'referral' && <ReferralPage />}
       </div>
     </div>
   );

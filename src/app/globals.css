@@ -2,6 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Solana Wallet Adapter Style Overrides */
+.wallet-adapter-button {
+  font-family: 'VT323', monospace !important;
+  background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+  border-radius: 8px !important;
+  height: auto !important;
+  padding: 8px 16px !important;
+}
+
+.wallet-adapter-button:hover {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7) !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background: rgba(13, 17, 23, 0.95) !important;
+}
+
+.wallet-adapter-modal-container {
+  background: #161b22 !important;
+  border: 2px solid #30363d !important;
+  border-radius: 12px !important;
+}
+
+.wallet-adapter-modal-title {
+  font-family: 'Press Start 2P', cursive !important;
+  font-size: 10px !important;
+  color: #fbbf24 !important;
+}
+
+.wallet-adapter-modal-list li {
+  background: #0d1117 !important;
+  border: 1px solid #30363d !important;
+  border-radius: 8px !important;
+}
+
+.wallet-adapter-modal-list li:hover {
+  background: #1c2128 !important;
+  border-color: #a855f7 !important;
+}
+
+.wallet-adapter-modal-list-more {
+  color: #8b949e !important;
+}
+
+.wallet-adapter-modal-list-more svg {
+  fill: #8b949e !important;
+}
+
+.wallet-adapter-button-trigger {
+  background: transparent !important;
+}
+
 /* Google Fonts - Pixel fonts for CFL aesthetic */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&display=swap');
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { UnifiedRaceChart } from './UnifiedRaceChart';
 import { RaceLeaderboard } from './RaceLeaderboard';
 import { AlertPanel } from './AlertPanel';
@@ -20,6 +21,67 @@ export function Dashboard() {
   const [bottomHeight, setBottomHeight] = useState(120);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Subscription timer state
+  const { publicKey } = useWallet();
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
+
+  // Fetch and update subscription timer
+  useEffect(() => {
+    if (!publicKey) {
+      setTimeLeft(null);
+      return;
+    }
+
+    let expiresAt: Date | null = null;
+    let intervalId: NodeJS.Timeout;
+
+    const fetchSubscription = async () => {
+      try {
+        const response = await fetch(`/api/subscription?wallet=${publicKey.toBase58()}`);
+        const data = await response.json();
+        if (data.active && data.expiresAt) {
+          expiresAt = new Date(data.expiresAt);
+        } else {
+          expiresAt = null;
+          setTimeLeft(null);
+        }
+      } catch {
+        expiresAt = null;
+        setTimeLeft(null);
+      }
+    };
+
+    const updateTimer = () => {
+      if (!expiresAt) return;
+      const now = new Date();
+      const diff = expiresAt.getTime() - now.getTime();
+      if (diff <= 0) {
+        setTimeLeft(null);
+        expiresAt = null;
+        return;
+      }
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeLeft(
+        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      );
+    };
+
+    fetchSubscription().then(() => {
+      updateTimer();
+      intervalId = setInterval(updateTimer, 1000);
+    });
+
+    // Refresh subscription status every 5 minutes
+    const refreshId = setInterval(fetchSubscription, 5 * 60 * 1000);
+
+    return () => {
+      clearInterval(intervalId);
+      clearInterval(refreshId);
+    };
+  }, [publicKey]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -64,7 +126,8 @@ export function Dashboard() {
         {/* Main content area */}
         <div ref={containerRef} className="flex-1 flex flex-col md:overflow-hidden min-h-0">
           {/* Unified Race Chart - Main focus, takes most space */}
-          <div className="h-[300px] md:flex-1 card-pixel p-2 md:p-3 min-h-[400px] md:min-h-0">
+          {/* Landscape mobile: full viewport height */}
+          <div className="h-[300px] landscape:h-[80vh] md:flex-1 card-pixel p-2 md:p-3 min-h-[250px] md:min-h-0">
             <UnifiedRaceChart
               chartData={chartData}
               positions={positions}
@@ -171,10 +234,15 @@ export function Dashboard() {
         </div>
       </main>
 
-      {/* Minimal Footer */}
+      {/* Footer */}
       <footer className="px-3 py-2 border-t-2 border-cfl-border flex-shrink-0 bg-cfl-card">
         <div className="flex items-center justify-between font-pixel-body text-sm text-cfl-text-muted">
           <span>CFL Race Tracker</span>
+          {timeLeft ? (
+            <span className="text-xs text-cfl-text-muted/60">{timeLeft} left</span>
+          ) : (
+            <span className="text-xs text-cfl-orange/80">Press PLAY to start racing</span>
+          )}
           <span className="text-cfl-teal">Powered by Pyth Network</span>
         </div>
       </footer>
