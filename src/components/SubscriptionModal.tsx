@@ -18,13 +18,14 @@ interface Props {
   onSuccess: () => void;
 }
 
-type ModalState = 'info' | 'connect' | 'processing';
+type ModalState = 'info' | 'connect' | 'processing' | 'checking';
 
 export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
   // All hooks MUST be at the top, before any conditional returns
   const [mounted, setMounted] = useState(false);
   const [state, setState] = useState<ModalState>('info');
   const [error, setError] = useState<string | null>(null);
+  const [alreadyPaid, setAlreadyPaid] = useState(false);
 
   const wallet = useWallet();
   const { connection } = useConnection();
@@ -36,13 +37,39 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
     setMounted(true);
   }, []);
 
-  // Reset state when modal opens
+  // Reset state when modal opens and check subscription
   useEffect(() => {
     if (isOpen) {
       setState('info');
       setError(null);
+      setAlreadyPaid(false);
+      // Auto-check if connected
+      if (connected && publicKey) {
+        checkExistingSubscription();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, connected, publicKey]);
+
+  const checkExistingSubscription = async () => {
+    if (!publicKey) return;
+
+    setState('checking');
+    try {
+      const response = await fetch(`/api/subscription?wallet=${publicKey.toBase58()}`);
+      const data = await response.json();
+
+      if (data.active) {
+        setAlreadyPaid(true);
+        // Auto-proceed if already paid
+        onSuccess();
+        onClose();
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to check subscription:', err);
+    }
+    setState('info');
+  };
 
   // When wallet connects after clicking continue
   useEffect(() => {
@@ -133,7 +160,12 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
 
       {/* Modal */}
       <div className="relative card-pixel max-w-sm w-full mx-4 p-6">
-        {state === 'processing' ? (
+        {state === 'checking' ? (
+          <div className="text-center py-8">
+            <div className="w-12 h-12 border-4 border-cfl-teal border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="font-pixel-body text-cfl-text">Checking subscription...</p>
+          </div>
+        ) : state === 'processing' ? (
           <div className="text-center py-8">
             <div className="w-12 h-12 border-4 border-cfl-green border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="font-pixel-body text-cfl-text">Processing payment...</p>
@@ -194,6 +226,14 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
               >
                 {connected ? 'PAY & START' : 'CONNECT & PAY'}
               </button>
+              {connected && (
+                <button
+                  onClick={checkExistingSubscription}
+                  className="w-full py-2 px-4 bg-cfl-teal/20 border border-cfl-teal/50 text-cfl-teal hover:bg-cfl-teal/30 font-pixel text-[7px] rounded-lg transition-all"
+                >
+                  CHECK IF ALREADY PAID
+                </button>
+              )}
               <button
                 onClick={onClose}
                 className="w-full py-2 px-4 bg-transparent border border-cfl-border text-cfl-text-muted hover:text-white font-pixel-body text-xs rounded-lg transition-all"
