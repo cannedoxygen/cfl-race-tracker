@@ -126,8 +126,8 @@ export function Dashboard() {
         {/* Main content area */}
         <div ref={containerRef} className="flex-1 flex flex-col md:overflow-hidden min-h-0">
           {/* Unified Race Chart - Main focus, takes most space */}
-          {/* Landscape mobile: full viewport height */}
-          <div className="h-[300px] landscape:h-[80vh] md:flex-1 card-pixel p-2 md:p-3 min-h-[250px] md:min-h-0">
+          {/* Landscape mobile: full screen height minus header/footer */}
+          <div className="h-[300px] landscape:h-[calc(100vh-100px)] landscape:min-h-[calc(100vh-100px)] md:landscape:h-auto md:landscape:min-h-0 md:flex-1 card-pixel p-2 md:p-3 min-h-[250px] md:min-h-0 flex-shrink-0">
             <UnifiedRaceChart
               chartData={chartData}
               positions={positions}
