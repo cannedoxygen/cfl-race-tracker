@@ -148,6 +148,7 @@ export function PaywallGate({ children }: Props) {
       if (data.success) {
         setExpiresAt(new Date(data.expiresAt));
         setState('active');
+        setHasVerifiedAccess(true); // Grant access after successful payment
       } else {
         setError(data.error || 'Payment verification failed');
         setState('pay');
