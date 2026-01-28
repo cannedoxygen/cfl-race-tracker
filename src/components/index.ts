@@ -14,3 +14,4 @@ export { SubscriptionTimer } from './SubscriptionTimer';
 export { JackpotDisplay } from './JackpotDisplay';
 export { SubscriptionModal } from './SubscriptionModal';
 export { Footer } from './Footer';
+export { HourlyTopMover } from './HourlyTopMover';

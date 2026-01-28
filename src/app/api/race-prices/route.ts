@@ -122,7 +122,8 @@ export async function GET(request: Request) {
     }
 
     // Start a new race - store current prices as baseline
-    if (action === 'start' || (startTimeParam && parseInt(startTimeParam) !== raceStartTime)) {
+    // Only reset on explicit 'start' action, not on cold starts
+    if (action === 'start') {
       raceStartTime = startTimeParam ? parseInt(startTimeParam) : now;
       raceStartPrices = new Map(currentPrices);
 
@@ -135,6 +136,13 @@ export async function GET(request: Request) {
         tokenCount: raceStartPrices.size,
         timestamp: now,
       });
+    }
+
+    // If client has a startTime but server lost state (cold start), restore it silently
+    if (startTimeParam && !raceStartTime) {
+      raceStartTime = parseInt(startTimeParam);
+      // Use current prices as baseline since we lost the original start prices
+      raceStartPrices = new Map(currentPrices);
     }
 
     // Reset race

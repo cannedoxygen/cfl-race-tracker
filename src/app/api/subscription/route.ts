@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { isVipWallet } from '@/lib/wallet';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +12,15 @@ export async function GET(request: NextRequest) {
         { error: 'Missing wallet parameter' },
         { status: 400 }
       );
+    }
+
+    // VIP wallets play for free
+    if (isVipWallet(walletAddress)) {
+      return NextResponse.json({
+        active: true,
+        expiresAt: null,
+        vip: true,
+      });
     }
 
     const now = new Date().toISOString();

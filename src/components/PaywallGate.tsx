@@ -31,6 +31,7 @@ export function PaywallGate({ children }: Props) {
 
   const [state, setState] = useState<PaywallState>('loading');
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [isVip, setIsVip] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Check subscription status
@@ -46,8 +47,13 @@ export function PaywallGate({ children }: Props) {
       );
       const data = await response.json();
 
-      if (data.active && data.expiresAt) {
-        setExpiresAt(new Date(data.expiresAt));
+      if (data.active) {
+        if (data.vip) {
+          setIsVip(true);
+        }
+        if (data.expiresAt) {
+          setExpiresAt(new Date(data.expiresAt));
+        }
         setState('active');
       } else {
         setState('pay');
@@ -66,9 +72,9 @@ export function PaywallGate({ children }: Props) {
     }
   }, [connected, publicKey, checkSubscription]);
 
-  // Check if subscription expired
+  // Check if subscription expired (VIP never expires)
   useEffect(() => {
-    if (!expiresAt) return;
+    if (!expiresAt || isVip) return;
 
     const checkExpiry = () => {
       if (new Date() >= expiresAt) {
@@ -79,7 +85,7 @@ export function PaywallGate({ children }: Props) {
 
     const interval = setInterval(checkExpiry, 1000);
     return () => clearInterval(interval);
-  }, [expiresAt]);
+  }, [expiresAt, isVip]);
 
   const handleConnect = () => {
     setVisible(true);
@@ -157,8 +163,8 @@ export function PaywallGate({ children }: Props) {
     );
   }
 
-  // Active subscription - show the app
-  if (state === 'active' && expiresAt) {
+  // Active subscription or VIP - show the app
+  if (state === 'active' && (expiresAt || isVip)) {
     return <>{children}</>;
   }
 

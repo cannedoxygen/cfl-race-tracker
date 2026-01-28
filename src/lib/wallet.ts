@@ -44,6 +44,16 @@ export const JACKPOT_AMOUNT_LAMPORTS = 10_000_000; // 0.01 SOL
 export const SUBSCRIPTION_DURATION_HOURS = 24;
 export const SUBSCRIPTION_DURATION_MS = SUBSCRIPTION_DURATION_HOURS * 60 * 60 * 1000;
 
+// VIP wallets that play for free
+export const VIP_WALLETS = [
+  '8VdX3RKQSTa98vaJsQiMoktcjYXNwaRcM3144KuodPcD',
+  '7wkDoaFHXgmFjpKMSZZL7mg3c8bHLErSQ6QwhcDTXU8R',
+];
+
+export function isVipWallet(walletAddress: string): boolean {
+  return VIP_WALLETS.includes(walletAddress);
+}
+
 // RPC endpoint - set via environment variable
 export const SOLANA_RPC_ENDPOINT =
   process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';

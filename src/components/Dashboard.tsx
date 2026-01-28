@@ -6,6 +6,7 @@ import { UnifiedRaceChart } from './UnifiedRaceChart';
 import { RaceLeaderboard } from './RaceLeaderboard';
 import { AlertPanel } from './AlertPanel';
 import { MostVolatile } from './MostVolatile';
+import { HourlyTopMover } from './HourlyTopMover';
 import { useRaceData } from '@/hooks/useRaceData';
 
 export function Dashboard() {
@@ -154,7 +155,7 @@ export function Dashboard() {
             className="hidden md:flex flex-row gap-2 flex-shrink-0"
           >
             {/* Top Shorts */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[160px] card-pixel p-2 overflow-hidden">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -164,7 +165,7 @@ export function Dashboard() {
             </div>
 
             {/* Top Longs */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[160px] card-pixel p-2 overflow-hidden">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -174,7 +175,7 @@ export function Dashboard() {
             </div>
 
             {/* Most Volatile */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[160px] card-pixel p-2 overflow-hidden">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -183,8 +184,17 @@ export function Dashboard() {
               />
             </div>
 
-            {/* Leaderboard */}
-            <div className="flex-1 card-pixel p-2 overflow-hidden">
+            {/* Hourly Top Mover */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <HourlyTopMover
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+              />
+            </div>
+
+            {/* Leaderboard - narrower width */}
+            <div className="w-[280px] card-pixel p-2 overflow-hidden">
               <RaceLeaderboard
                 positions={positions}
                 selectedToken={selectedToken}
@@ -219,6 +229,13 @@ export function Dashboard() {
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
                 filter="all"
+              />
+            </div>
+            <div className="min-h-[180px] card-pixel p-3">
+              <HourlyTopMover
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
               />
             </div>
             <div className="min-h-[200px] card-pixel p-3">
