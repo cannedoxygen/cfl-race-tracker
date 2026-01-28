@@ -16,7 +16,6 @@ import {
   SUBSCRIPTION_COST_SOL,
   truncateAddress,
 } from '@/lib/wallet';
-import { JackpotDisplay } from './JackpotDisplay';
 
 interface Props {
   children: React.ReactNode;
@@ -160,9 +159,6 @@ export function PaywallGate({ children }: Props) {
     }
   };
 
-  // DEBUG: Log state for troubleshooting
-  console.log('[PaywallGate]', { state, hasVerifiedAccess, connected, publicKey: publicKey?.toBase58() });
-
   // CRITICAL: Only show app if we have VERIFIED access
   // This is the ONLY place children can be rendered
   if (hasVerifiedAccess && state === 'active') {
@@ -183,11 +179,7 @@ export function PaywallGate({ children }: Props) {
 
   // Paywall screen
   return (
-    <div className="h-screen bg-cfl-bg flex flex-col items-center justify-center p-4">
-      {/* DEBUG: Show current state */}
-      <div className="fixed top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded z-50">
-        STATE: {state} | ACCESS: {hasVerifiedAccess ? 'YES' : 'NO'}
-      </div>
+    <div className="min-h-screen bg-cfl-bg flex flex-col items-center justify-center p-4">
       <div className="card-pixel max-w-md w-full p-6 md:p-8">
         {/* Header */}
         <div className="text-center mb-6">
@@ -275,11 +267,6 @@ export function PaywallGate({ children }: Props) {
             </p>
           </div>
         )}
-      </div>
-
-      {/* Jackpot Display */}
-      <div className="mt-6 max-w-md w-full">
-        <JackpotDisplay />
       </div>
     </div>
   );
