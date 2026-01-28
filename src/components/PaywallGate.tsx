@@ -33,11 +33,14 @@ export function PaywallGate({ children }: Props) {
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [isVip, setIsVip] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // CRITICAL: Default to false, only true when we VERIFY access
+  const [hasVerifiedAccess, setHasVerifiedAccess] = useState(false);
 
   // Check subscription status
   const checkSubscription = useCallback(async () => {
     if (!publicKey) {
       setState('connect');
+      setHasVerifiedAccess(false);
       return;
     }
 
@@ -47,7 +50,7 @@ export function PaywallGate({ children }: Props) {
       );
       const data = await response.json();
 
-      if (data.active) {
+      if (data.active && (data.expiresAt || data.vip)) {
         if (data.vip) {
           setIsVip(true);
         }
@@ -55,12 +58,15 @@ export function PaywallGate({ children }: Props) {
           setExpiresAt(new Date(data.expiresAt));
         }
         setState('active');
+        setHasVerifiedAccess(true); // ONLY set true here
       } else {
         setState('pay');
+        setHasVerifiedAccess(false);
       }
     } catch (err) {
       console.error('Failed to check subscription:', err);
       setState('pay');
+      setHasVerifiedAccess(false);
     }
   }, [publicKey]);
 
@@ -69,6 +75,7 @@ export function PaywallGate({ children }: Props) {
       checkSubscription();
     } else {
       setState('connect');
+      setHasVerifiedAccess(false);
     }
   }, [connected, publicKey, checkSubscription]);
 
@@ -80,6 +87,7 @@ export function PaywallGate({ children }: Props) {
       if (new Date() >= expiresAt) {
         setState('pay');
         setExpiresAt(null);
+        setHasVerifiedAccess(false); // Revoke access on expiry
       }
     };
 
@@ -151,6 +159,12 @@ export function PaywallGate({ children }: Props) {
     }
   };
 
+  // CRITICAL: Only show app if we have VERIFIED access
+  // This is the ONLY place children can be rendered
+  if (hasVerifiedAccess && state === 'active') {
+    return <>{children}</>;
+  }
+
   // Loading state
   if (state === 'loading') {
     return (
@@ -161,11 +175,6 @@ export function PaywallGate({ children }: Props) {
         </div>
       </div>
     );
-  }
-
-  // Active subscription or VIP - show the app
-  if (state === 'active' && (expiresAt || isVip)) {
-    return <>{children}</>;
   }
 
   // Paywall screen
