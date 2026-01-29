@@ -7,6 +7,7 @@ import { RaceLeaderboard } from './RaceLeaderboard';
 import { AlertPanel } from './AlertPanel';
 import { MostVolatile } from './MostVolatile';
 import { HourlyTopMover } from './HourlyTopMover';
+import { TokenStatsCard } from './TokenStatsCard';
 import { useRaceData } from '@/hooks/useRaceData';
 
 export function Dashboard() {
@@ -250,6 +251,14 @@ export function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Token Stats Card - shows when a token is tapped */}
+      {selectedToken && (() => {
+        const token = positions.find(p => p.mint === selectedToken);
+        return token ? (
+          <TokenStatsCard token={token} onClose={() => setSelectedToken(null)} />
+        ) : null;
+      })()}
 
       {/* Footer */}
       <footer className="px-3 py-2 border-t-2 border-cfl-border flex-shrink-0 bg-cfl-card">
