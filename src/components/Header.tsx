@@ -116,23 +116,15 @@ export function Header({ activeTab, onTabChange }: Props) {
   } = useRaceStore();
 
   // Check subscription and start race
+  // ALWAYS re-verify with the API - never trust cached state
   const handlePlayClick = useCallback(async () => {
-    // If already subscribed, start immediately
-    if (isSubscribed) {
-      startRace();
-      return;
-    }
-
-    // Always do a fresh check when PLAY is clicked
     if (publicKey) {
       setIsCheckingSubscription(true);
       try {
-        console.log('Play click: Checking subscription for:', publicKey.toBase58());
         const response = await fetch(
           `/api/subscription?wallet=${publicKey.toBase58()}`
         );
         const data = await response.json();
-        console.log('Play click: Subscription check result:', data);
 
         if (data.active) {
           setIsSubscribed(true);
@@ -140,6 +132,9 @@ export function Header({ activeTab, onTabChange }: Props) {
           setIsCheckingSubscription(false);
           startRace();
           return;
+        } else {
+          // Subscription may have expired - reset cached state
+          setIsSubscribed(false);
         }
       } catch (err) {
         console.error('Failed to check subscription:', err);
@@ -148,9 +143,9 @@ export function Header({ activeTab, onTabChange }: Props) {
       }
     }
 
-    // Not subscribed, show modal
+    // Not subscribed or no wallet, show modal
     setShowSubscriptionModal(true);
-  }, [publicKey, isSubscribed, startRace]);
+  }, [publicKey, startRace]);
 
   // Called when payment succeeds
   const handleSubscriptionSuccess = () => {
