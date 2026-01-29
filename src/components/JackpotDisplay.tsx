@@ -9,9 +9,19 @@ interface TopUser {
   subscription_count: number;
 }
 
+interface RecentWinner {
+  weekId: string;
+  winnerWallet: string;
+  prizeSol: number;
+  txSignature: string | null;
+  status: string;
+  drawnAt: string;
+}
+
 interface JackpotData {
   totalLamports: number;
   topUsers: TopUser[];
+  recentWinner: RecentWinner | null;
 }
 
 export function JackpotDisplay() {
@@ -100,10 +110,21 @@ export function JackpotDisplay() {
               <div className="font-pixel-body text-sm text-cfl-text-muted">Players Entered</div>
             </div>
           </div>
-          <div className="mt-4 p-3 bg-cfl-bg rounded-lg border border-cfl-border">
+          <div className="mt-4 p-3 bg-cfl-bg rounded-lg border border-cfl-border space-y-2">
             <div className="flex justify-between items-center">
               <span className="font-pixel text-[8px] text-cfl-text-muted">DRAWING:</span>
               <span className="font-pixel-body text-lg text-cfl-green">{getNextFriday()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-pixel text-[8px] text-cfl-text-muted">WALLET:</span>
+              <a
+                href="https://solscan.io/account/8BitSWGiGxqUA23gtLR6xPASE8dbU2tvCo9KL2NE26W2"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-pixel-body text-sm text-cfl-teal hover:text-cfl-green transition-colors underline"
+              >
+                8Bit...E26W2
+              </a>
             </div>
           </div>
         </div>
@@ -180,6 +201,53 @@ export function JackpotDisplay() {
             </div>
           )}
         </div>
+
+        {/* Recent Winner */}
+        {data?.recentWinner && (
+          <div className="card-pixel p-5">
+            <h2 className="font-pixel text-[10px] text-cfl-gold mb-4">RECENT WINNER</h2>
+            <div className="p-4 rounded-lg bg-cfl-gold/10 border border-cfl-gold/30">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-pixel text-[10px] bg-cfl-gold/20 text-cfl-gold">
+                    🏆
+                  </span>
+                  <div>
+                    <div className="font-pixel-body text-lg text-white">
+                      {truncateAddress(data.recentWinner.winnerWallet, 6)}
+                    </div>
+                    <div className="font-pixel text-[7px] text-cfl-gold">
+                      WINNER
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-pixel text-sm text-cfl-gold">
+                    {data.recentWinner.prizeSol.toFixed(4)} SOL
+                  </div>
+                  <div className="font-pixel-body text-sm text-cfl-text-muted">
+                    Week of {new Date(data.recentWinner.drawnAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                </div>
+              </div>
+              {data.recentWinner.txSignature && (
+                <a
+                  href={`https://solscan.io/tx/${data.recentWinner.txSignature}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-center font-pixel text-[8px] text-cfl-teal hover:text-cfl-green transition-colors underline"
+                >
+                  VIEW TRANSACTION ON SOLSCAN →
+                </a>
+              )}
+              {data.recentWinner.status === 'failed' && (
+                <div className="text-center font-pixel text-[8px] text-cfl-orange mt-1">
+                  PAYOUT PENDING
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Fine Print */}
         <div className="text-center font-pixel-body text-sm text-cfl-text-muted px-4">

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { supabase } from '@/lib/supabase';
+import { getRecentDrawing } from '@/lib/jackpot';
 
-const JACKPOT_WALLET = '5bY2BoRtUjEmDpTtRv6Z5CGWg3WW7WDEqXM4mnnLKEhd';
+const JACKPOT_WALLET = '8BitSWGiGxqUA23gtLR6xPASE8dbU2tvCo9KL2NE26W2';
 const RPC_ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
 
 export async function GET() {
@@ -54,9 +55,18 @@ export async function GET() {
       usersCount: usersData?.length
     });
 
+    // Get most recent jackpot drawing
+    const recentWinner = await getRecentDrawing();
+
+    // Calculate jackpot from tickets (0.01 SOL per ticket), not on-chain balance
+    const JACKPOT_PER_TICKET_LAMPORTS = 10_000_000;
+    const totalTickets = (usersData || []).reduce((sum, u) => sum + u.subscription_count, 0);
+    const jackpotLamports = totalTickets * JACKPOT_PER_TICKET_LAMPORTS;
+
     return NextResponse.json({
-      totalLamports: onChainBalance,
+      totalLamports: jackpotLamports,
       topUsers: usersData || [],
+      recentWinner,
     });
   } catch (error) {
     console.error('Jackpot API error:', error);
