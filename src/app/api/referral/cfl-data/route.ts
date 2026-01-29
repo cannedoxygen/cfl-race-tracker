@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getLatestSnapshot } from '@/lib/referral';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,23 +64,48 @@ export async function GET() {
       const listData = await listRes.json();
       if (listData.success) {
         referrals = listData.data.friends || [];
-        // Active = has generated any referral earnings (played paid games)
-        activeReferrals = referrals.filter((r: CFLFriend) => r.referralEarnings > 0);
       }
     }
 
-    // Get list of active usernames for validation
+    // Get last week's snapshot to determine who actually played THIS week
+    const lastSnapshot = await getLatestSnapshot();
+    const hasSnapshot = lastSnapshot.size > 0;
+
+    // Build enriched referral data with weekly earnings
+    const enrichedReferrals = referrals.map((r: CFLFriend) => {
+      const snapshotEarnings = lastSnapshot.get(r.username.toLowerCase()) ?? 0;
+      const earnedThisWeek = r.referralEarnings - snapshotEarnings;
+      return {
+        ...r,
+        earnedThisWeek: Math.max(0, earnedThisWeek), // avoid negatives from rounding
+        snapshotEarnings,
+      };
+    });
+
+    // Active = earned MORE than their snapshot (played paid games this week)
+    // If no snapshot exists yet, fall back to all-time earnings > 0
+    activeReferrals = hasSnapshot
+      ? enrichedReferrals.filter((r: { earnedThisWeek: number }) => r.earnedThisWeek > 0)
+      : enrichedReferrals.filter((r: { referralEarnings: number }) => r.referralEarnings > 0);
+
     const activeUsernames = activeReferrals.map((r: CFLFriend) => r.username.toLowerCase());
+
+    // Calculate this week's earnings
+    const weeklyEarnings = enrichedReferrals.reduce(
+      (sum: number, r: { earnedThisWeek: number }) => sum + r.earnedThisWeek, 0
+    );
 
     return NextResponse.json({
       success: true,
       stats,
-      referrals,
+      referrals: enrichedReferrals,
       activeReferrals,
       activeUsernames,
       totalReferrals: referrals.length,
       totalActive: activeReferrals.length,
       totalEarnings: stats?.referralEarnings || 0,
+      weeklyEarnings,
+      hasSnapshot,
     });
   } catch (error) {
     console.error('CFL data fetch error:', error);

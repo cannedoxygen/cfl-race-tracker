@@ -141,6 +141,68 @@ export async function performDrawing(): Promise<{ success: boolean; message: str
   return { success: true, message: `Winner selected: ${winner.cflUsername}!`, winner };
 }
 
+// Take a snapshot of all referrals' earnings for the current week
+// Called when the raffle runs - becomes the baseline for next week
+export async function takeEarningsSnapshot(
+  weekId: string,
+  referrals: Array<{ username: string; referralEarnings: number }>
+): Promise<{ success: boolean; count: number }> {
+  if (referrals.length === 0) return { success: true, count: 0 };
+
+  const rows = referrals.map(r => ({
+    week_id: weekId,
+    cfl_username: r.username.toLowerCase(),
+    referral_earnings: r.referralEarnings,
+  }));
+
+  const { error } = await supabase
+    .from('referral_snapshots')
+    .upsert(rows, { onConflict: 'week_id,cfl_username' });
+
+  if (error) {
+    console.error('Snapshot insert error:', error);
+    return { success: false, count: 0 };
+  }
+
+  return { success: true, count: rows.length };
+}
+
+// Get the most recent snapshot (last week's baseline)
+// Returns a map of username -> earnings at snapshot time
+export async function getLatestSnapshot(): Promise<Map<string, number>> {
+  const currentWeek = getCurrentWeekId();
+
+  // Get the most recent snapshot that is NOT the current week
+  // (we want last week's snapshot as the baseline)
+  const { data, error } = await supabase
+    .from('referral_snapshots')
+    .select('week_id')
+    .neq('week_id', currentWeek)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error || !data || data.length === 0) {
+    return new Map();
+  }
+
+  const lastWeekId = data[0].week_id;
+
+  const { data: snapshots, error: snapError } = await supabase
+    .from('referral_snapshots')
+    .select('cfl_username, referral_earnings')
+    .eq('week_id', lastWeekId);
+
+  if (snapError || !snapshots) {
+    return new Map();
+  }
+
+  const map = new Map<string, number>();
+  for (const row of snapshots) {
+    map.set(row.cfl_username, Number(row.referral_earnings));
+  }
+  return map;
+}
+
 // Get past drawings
 export async function getPastDrawings(): Promise<WeeklyDrawing[]> {
   const { data, error } = await supabase

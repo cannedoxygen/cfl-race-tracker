@@ -14,6 +14,8 @@ interface CFLReferral {
   profilePic: string;
   mmr: number;
   referralEarnings: number;
+  earnedThisWeek: number;
+  snapshotEarnings: number;
   activeFrameUrl: string | null;
 }
 
@@ -32,6 +34,8 @@ interface CFLData {
   totalReferrals: number;
   totalActive: number;
   totalEarnings: number;
+  weeklyEarnings: number;
+  hasSnapshot: boolean;
 }
 
 interface PastWinner {
@@ -133,7 +137,7 @@ export function ReferralPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="card-pixel p-4 text-center">
               <div className="font-pixel text-sm text-cfl-green">
-                {cflData.totalEarnings.toFixed(5)}
+                {cflData.weeklyEarnings.toFixed(5)}
               </div>
               <div className="font-pixel-body text-sm text-cfl-text-muted mt-1">SOL This Week</div>
             </div>
@@ -147,11 +151,13 @@ export function ReferralPage() {
               <div className="font-pixel text-sm text-cfl-teal">
                 {cflData.totalActive}
               </div>
-              <div className="font-pixel-body text-sm text-cfl-text-muted mt-1">Entries This Week</div>
+              <div className="font-pixel-body text-sm text-cfl-text-muted mt-1">
+                {cflData.hasSnapshot ? 'Played This Week' : 'Played (All Time)'}
+              </div>
             </div>
             <div className="card-pixel p-4 text-center">
               <div className="font-pixel text-sm text-cfl-gold text-gold-glow">
-                {(cflData.totalEarnings * 0.5).toFixed(5)}
+                {(cflData.weeklyEarnings * 0.5).toFixed(5)}
               </div>
               <div className="font-pixel-body text-sm text-cfl-text-muted mt-1">Prize Pool (50%)</div>
             </div>
@@ -231,7 +237,7 @@ export function ReferralPage() {
               <div className="text-center py-8 text-cfl-text-muted font-pixel text-[8px]">NO REFERRALS YET. BE THE FIRST!</div>
             ) : (
               <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
-                {/* Active entries first */}
+                {/* Active entries first - played this week */}
                 {cflData.activeReferrals.map((referral) => (
                   <div
                     key={referral.id}
@@ -252,15 +258,18 @@ export function ReferralPage() {
                     </div>
                     <div className="text-right">
                       <div className="font-pixel text-[9px] text-cfl-green">
-                        {referral.referralEarnings.toFixed(5)} SOL
+                        +{referral.earnedThisWeek.toFixed(5)} SOL
+                      </div>
+                      <div className="font-pixel text-[7px] text-cfl-text-muted">
+                        {referral.referralEarnings.toFixed(5)} total
                       </div>
                     </div>
                   </div>
                 ))}
 
-                {/* Inactive referrals */}
+                {/* Inactive referrals - didn't play this week */}
                 {cflData.referrals
-                  .filter(r => r.referralEarnings <= 0)
+                  .filter(r => !cflData.activeReferrals.some(a => a.id === r.id))
                   .map((referral) => (
                     <div
                       key={referral.id}
@@ -277,6 +286,11 @@ export function ReferralPage() {
                           <div className="font-pixel text-[7px] text-cfl-text-muted">
                             NOT ENTERED - NEEDS TO PLAY
                           </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-pixel text-[7px] text-cfl-text-muted">
+                          {referral.referralEarnings.toFixed(5)} total
                         </div>
                       </div>
                     </div>

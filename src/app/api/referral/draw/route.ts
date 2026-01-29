@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { takeEarningsSnapshot } from '@/lib/referral';
 
 const CFL_API_BASE = 'https://v12-cfl-backend-production.up.railway.app';
 const USER_PUBLIC_KEY = '8VdX3RKQSTa98vaJsQiMoktcjYXNwaRcM3144KuodPcD';
@@ -87,6 +88,17 @@ export async function POST(request: NextRequest) {
       // Continue anyway - drawing was successful even if save failed
     }
 
+    // Snapshot ALL referrals' earnings (not just active ones)
+    // This becomes the baseline for next week's eligibility check
+    const allReferrals = listData.data.friends.map(
+      (r: { username: string; referralEarnings: number }) => ({
+        username: r.username,
+        referralEarnings: r.referralEarnings,
+      })
+    );
+    const snapshotResult = await takeEarningsSnapshot(weekId, allReferrals);
+    console.log(`Snapshot taken: ${snapshotResult.count} referrals recorded for ${weekId}`);
+
     return NextResponse.json({
       success: true,
       message: `Winner selected: ${winner.username}!`,
@@ -98,6 +110,7 @@ export async function POST(request: NextRequest) {
       prize,
       weekId,
       totalEntries: activeReferrals.length,
+      snapshotCount: snapshotResult.count,
     });
   } catch (error) {
     console.error('Drawing error:', error);
