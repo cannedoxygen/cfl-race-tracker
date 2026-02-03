@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { TldParser } from '@onsol/tldparser';
 import { supabase } from '@/lib/supabase';
 import { getRecentDrawing } from '@/lib/jackpot';
 
@@ -19,12 +20,12 @@ export async function GET() {
       console.error('Failed to fetch on-chain balance:', rpcError);
     }
 
-    // Get top users by subscription count from database
+    // Get ALL users with tickets (no limit) so totals are accurate
     let { data: usersData, error: usersError } = await supabase
       .from('users')
       .select('wallet_address, subscription_count')
-      .order('subscription_count', { ascending: false })
-      .limit(10);
+      .gt('subscription_count', 0)
+      .order('subscription_count', { ascending: false });
 
     if (usersError) {
       console.error('Failed to fetch users:', usersError);
@@ -63,10 +64,36 @@ export async function GET() {
     const totalTickets = (usersData || []).reduce((sum, u) => sum + u.subscription_count, 0);
     const jackpotLamports = totalTickets * JACKPOT_PER_TICKET_LAMPORTS;
 
+    // Resolve .skr domain names for top wallets via AllDomains
+    const rpcConnection = new Connection(RPC_ENDPOINT, 'confirmed');
+    const parser = new TldParser(rpcConnection);
+    const allWallets = (usersData || []).slice(0, 20).map(u => u.wallet_address);
+    if (recentWinner && !allWallets.includes(recentWinner.winnerWallet)) {
+      allWallets.push(recentWinner.winnerWallet);
+    }
+
+    const domainMap: Record<string, string> = {};
+    await Promise.all(
+      allWallets.map(async (wallet) => {
+        try {
+          const domains = await parser.getParsedAllUserDomainsFromTld(
+            new PublicKey(wallet),
+            'skr'
+          );
+          if (domains && domains.length > 0) {
+            domainMap[wallet] = domains[0].domain;
+          }
+        } catch {
+          // No .skr domain for this wallet, skip
+        }
+      })
+    );
+
     return NextResponse.json({
       totalLamports: jackpotLamports,
       topUsers: usersData || [],
       recentWinner,
+      domainNames: domainMap,
     });
   } catch (error) {
     console.error('Jackpot API error:', error);
