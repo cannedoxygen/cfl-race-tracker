@@ -22,6 +22,7 @@ interface JackpotData {
   totalLamports: number;
   topUsers: TopUser[];
   recentWinner: RecentWinner | null;
+  domainNames: Record<string, string>;
 }
 
 export function JackpotDisplay() {
@@ -80,6 +81,11 @@ export function JackpotDisplay() {
   }
 
   const totalTickets = data?.topUsers.reduce((sum, u) => sum + u.subscription_count, 0) || 0;
+
+  const displayName = (wallet: string) => {
+    const domain = data?.domainNames?.[wallet];
+    return domain || truncateAddress(wallet, 6);
+  };
 
   return (
     <div className="h-full overflow-y-auto bg-cfl-bg text-white p-4 md:p-8">
@@ -181,7 +187,7 @@ export function JackpotDisplay() {
                     </span>
                     <div>
                       <div className="font-pixel-body text-lg text-white">
-                        {truncateAddress(user.wallet_address, 6)}
+                        {displayName(user.wallet_address)}
                       </div>
                       <div className="font-pixel text-[7px] text-cfl-green">
                         ENTERED
@@ -214,7 +220,7 @@ export function JackpotDisplay() {
                   </span>
                   <div>
                     <div className="font-pixel-body text-lg text-white">
-                      {truncateAddress(data.recentWinner.winnerWallet, 6)}
+                      {displayName(data.recentWinner.winnerWallet)}
                     </div>
                     <div className="font-pixel text-[7px] text-cfl-gold">
                       WINNER

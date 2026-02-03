@@ -207,6 +207,16 @@ export async function performJackpotDraw(): Promise<DrawingResult> {
   // Record success
   await recordDrawing(weekId, winner.wallet_address, winner.subscription_count, totalTickets, payoutAmount, txSignature);
 
+  // Reset all ticket counts so next week starts fresh
+  const { error: resetError } = await supabase
+    .from('users')
+    .update({ subscription_count: 0 })
+    .gt('subscription_count', 0);
+
+  if (resetError) {
+    console.error('Failed to reset ticket counts:', resetError);
+  }
+
   return {
     success: true,
     message: `Winner: ${winner.wallet_address}`,
