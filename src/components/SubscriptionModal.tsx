@@ -116,6 +116,7 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
     if (!publicKey || !sendTransaction) return;
 
     setState('processing');
+    let signature: string | null = null;
 
     try {
       const transaction = new Transaction();
@@ -138,10 +139,19 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
         })
       );
 
-      const signature = await sendTransaction(transaction, connection);
-      await connection.confirmTransaction(signature, 'confirmed');
+      signature = await sendTransaction(transaction, connection);
 
-      // Verify with backend
+      // Try to confirm, but don't fail if it times out
+      // The backend will verify the transaction anyway
+      try {
+        await connection.confirmTransaction(signature, 'confirmed');
+      } catch (confirmErr) {
+        console.warn('Confirmation timeout, proceeding to verify:', confirmErr);
+        // Continue anyway - backend will check if tx succeeded
+      }
+
+      // ALWAYS call verify-payment once we have a signature
+      // The backend does its own verification
       const response = await fetch('/api/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -162,7 +172,13 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
       }
     } catch (err: any) {
       console.error('Payment failed:', err);
-      setError(err.message || 'Transaction failed');
+
+      // If we got a signature but something else failed, tell user to check
+      if (signature) {
+        setError(`Transaction sent (${signature.slice(0, 8)}...) but verification failed. Tap "ALREADY PAID?" to retry.`);
+      } else {
+        setError(err.message || 'Transaction failed');
+      }
       setState('info');
     }
   };

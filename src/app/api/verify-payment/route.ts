@@ -15,7 +15,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { walletAddress, txSignature } = body;
 
+    console.log('verify-payment: Starting verification for', walletAddress, txSignature);
+
     if (!walletAddress || !txSignature) {
+      console.log('verify-payment: Missing params');
       return NextResponse.json(
         { error: 'Missing walletAddress or txSignature' },
         { status: 400 }
@@ -30,10 +33,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'Transaction already processed' },
-        { status: 400 }
-      );
+      console.log('verify-payment: Tx already processed, returning success');
+      // Return success if already processed - user is already subscribed
+      return NextResponse.json({ success: true, alreadyProcessed: true });
     }
 
     // Verify the transaction on-chain
@@ -42,18 +44,29 @@ export async function POST(request: NextRequest) {
     // Wait a moment for transaction to be confirmed
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    const tx = await connection.getParsedTransaction(txSignature, {
+    let tx = await connection.getParsedTransaction(txSignature, {
       maxSupportedTransactionVersion: 0,
     });
 
+    // Retry once if not found (RPC might be slow)
     if (!tx) {
+      console.log('verify-payment: Tx not found, retrying in 3s...');
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      tx = await connection.getParsedTransaction(txSignature, {
+        maxSupportedTransactionVersion: 0,
+      });
+    }
+
+    if (!tx) {
+      console.log('verify-payment: Tx still not found after retry');
       return NextResponse.json(
-        { error: 'Transaction not found' },
+        { error: 'Transaction not found. Please wait a moment and tap "ALREADY PAID?"' },
         { status: 400 }
       );
     }
 
     if (tx.meta?.err) {
+      console.log('verify-payment: Tx failed on-chain:', tx.meta.err);
       return NextResponse.json(
         { error: 'Transaction failed' },
         { status: 400 }
@@ -65,11 +78,15 @@ export async function POST(request: NextRequest) {
     let treasuryTransferFound = false;
     let jackpotTransferFound = false;
 
+    console.log('verify-payment: Checking', instructions.length, 'instructions');
+
     for (const ix of instructions) {
       if ('parsed' in ix && ix.parsed?.type === 'transfer') {
         const info = ix.parsed.info;
         const lamports = info.lamports;
         const destination = info.destination;
+
+        console.log('verify-payment: Found transfer to', destination, 'amount', lamports);
 
         // Check treasury transfer (allow small variance for fees)
         if (
@@ -88,6 +105,8 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+
+    console.log('verify-payment: treasury=', treasuryTransferFound, 'jackpot=', jackpotTransferFound);
 
     if (!treasuryTransferFound || !jackpotTransferFound) {
       return NextResponse.json(
