@@ -43,3 +43,8 @@ data/
 
 # Supabase
 supabase-schema.sql
+
+# Local env files with secrets
+.env.check
+.env.prod
+.env.local
