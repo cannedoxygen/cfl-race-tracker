@@ -4,7 +4,7 @@ import { TldParser } from '@onsol/tldparser';
 import { supabase } from '@/lib/supabase';
 import { getRecentDrawing } from '@/lib/jackpot';
 
-const JACKPOT_WALLET = '8BitSWGiGxqUA23gtLR6xPASE8dbU2tvCo9KL2NE26W2';
+const JACKPOT_WALLET = '8BitCWk3rnxhmAPyWnd41xt9hiq423erXXJKkea61TUf';
 const RPC_ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
 
 export async function GET() {

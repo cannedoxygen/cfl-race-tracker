@@ -2,7 +2,7 @@ import { PublicKey } from '@solana/web3.js';
 
 // Wallet addresses - hardcoded to avoid build-time env var issues
 const TREASURY_ADDRESS_STRING = '8VdX3RKQSTa98vaJsQiMoktcjYXNwaRcM3144KuodPcD';
-const JACKPOT_ADDRESS_STRING = '8BitSWGiGxqUA23gtLR6xPASE8dbU2tvCo9KL2NE26W2';
+const JACKPOT_ADDRESS_STRING = '8BitCWk3rnxhmAPyWnd41xt9hiq423erXXJKkea61TUf';
 
 // Lazy-loaded PublicKey instances
 let _treasuryAddress: PublicKey | null = null;
