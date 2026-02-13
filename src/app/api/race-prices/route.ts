@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { DEFAULT_TOKENS, getAllPythFeedIds } from '@/lib/tokens';
+import { fetchTokensFromCFL } from '@/lib/tokenService';
+import { Token } from '@/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -37,21 +38,24 @@ function convertPythPrice(rawPrice: string, expo: number): number {
   return parseFloat(rawPrice) * Math.pow(10, expo);
 }
 
-// Build feedId to token lookup
-const feedIdToToken = new Map<string, { symbol: string; mint: string; boost: number }>();
-DEFAULT_TOKENS.forEach(token => {
-  if (token.pythFeedId) {
-    feedIdToToken.set(token.pythFeedId, {
-      symbol: token.symbol,
-      mint: token.mint,
-      boost: token.boost,
-    });
-  }
-});
+// Build feedId to token lookup (refreshed on each request)
+function buildFeedIdLookup(tokens: Token[]): Map<string, { symbol: string; mint: string; boost: number }> {
+  const lookup = new Map<string, { symbol: string; mint: string; boost: number }>();
+  tokens.forEach(token => {
+    if (token.pythFeedId) {
+      lookup.set(token.pythFeedId, {
+        symbol: token.symbol,
+        mint: token.mint,
+        boost: token.boost,
+      });
+    }
+  });
+  return lookup;
+}
 
-async function fetchCurrentPrices(useFallback = false): Promise<Map<string, number>> {
+async function fetchCurrentPrices(tokens: Token[], useFallback = false): Promise<Map<string, number>> {
   const prices = new Map<string, number>();
-  const feedIds = getAllPythFeedIds();
+  const feedIds = tokens.filter(t => t.pythFeedId).map(t => t.pythFeedId!);
 
   if (feedIds.length === 0) return prices;
 
@@ -72,7 +76,7 @@ async function fetchCurrentPrices(useFallback = false): Promise<Map<string, numb
 
       if (!response.ok) {
         if (!useFallback) {
-          return fetchCurrentPrices(true);
+          return fetchCurrentPrices(tokens, true);
         }
         continue;
       }
@@ -90,7 +94,7 @@ async function fetchCurrentPrices(useFallback = false): Promise<Map<string, numb
     } catch (error) {
       console.error('Pyth fetch error:', error);
       if (!useFallback) {
-        return fetchCurrentPrices(true);
+        return fetchCurrentPrices(tokens, true);
       }
     }
   }
@@ -104,7 +108,11 @@ export async function GET(request: Request) {
   const startTimeParam = searchParams.get('startTime');
 
   try {
-    const currentPrices = await fetchCurrentPrices();
+    // Fetch tokens from CFL API (cached)
+    const tokens = await fetchTokensFromCFL();
+    const feedIdToToken = buildFeedIdLookup(tokens);
+
+    const currentPrices = await fetchCurrentPrices(tokens);
     const now = Date.now();
 
     // Update price history for all tokens

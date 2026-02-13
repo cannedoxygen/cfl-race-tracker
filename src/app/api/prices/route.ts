@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { DEFAULT_TOKENS, getAllPythFeedIds } from '@/lib/tokens';
+import { fetchTokensFromCFL } from '@/lib/tokenService';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -94,11 +94,14 @@ async function fetchPythPrices(feedIds: string[], useFallback = false): Promise<
 
 export async function GET() {
   try {
-    const feedIds = getAllPythFeedIds();
+    // Fetch tokens from CFL API (cached)
+    const tokens = await fetchTokensFromCFL();
+    const feedIds = tokens.filter(t => t.pythFeedId).map(t => t.pythFeedId!);
+
     const pythPrices = await fetchPythPrices(feedIds);
 
     // Map prices back to tokens
-    const tokenPrices = DEFAULT_TOKENS
+    const tokenPrices = tokens
       .filter(t => t.pythFeedId)
       .map(token => {
         const priceData = pythPrices.get(token.pythFeedId!);

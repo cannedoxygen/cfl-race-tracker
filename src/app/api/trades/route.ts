@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { DEFAULT_TOKENS, getAllPythFeedIds } from '@/lib/tokens';
-import { TradeEvent } from '@/types';
+import { fetchTokensFromCFL } from '@/lib/tokenService';
+import { TradeEvent, Token } from '@/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -37,20 +37,27 @@ function convertPythPrice(rawPrice: string, expo: number): number {
 }
 
 // Build feedId to token lookup
-const feedIdToToken = new Map<string, { symbol: string; mint: string; boost: number }>();
-DEFAULT_TOKENS.forEach(token => {
-  if (token.pythFeedId) {
-    feedIdToToken.set(token.pythFeedId, {
-      symbol: token.symbol,
-      mint: token.mint,
-      boost: token.boost,
-    });
-  }
-});
+function buildFeedIdLookup(tokens: Token[]): Map<string, { symbol: string; mint: string; boost: number }> {
+  const lookup = new Map<string, { symbol: string; mint: string; boost: number }>();
+  tokens.forEach(token => {
+    if (token.pythFeedId) {
+      lookup.set(token.pythFeedId, {
+        symbol: token.symbol,
+        mint: token.mint,
+        boost: token.boost,
+      });
+    }
+  });
+  return lookup;
+}
 
-async function fetchPythPricesAndGenerateTrades(useFallback = false): Promise<TradeEvent[]> {
+async function fetchPythPricesAndGenerateTrades(
+  tokens: Token[],
+  feedIdToToken: Map<string, { symbol: string; mint: string; boost: number }>,
+  useFallback = false
+): Promise<TradeEvent[]> {
   const newTrades: TradeEvent[] = [];
-  const feedIds = getAllPythFeedIds();
+  const feedIds = tokens.filter(t => t.pythFeedId).map(t => t.pythFeedId!);
 
   if (feedIds.length === 0) return newTrades;
 
@@ -72,7 +79,7 @@ async function fetchPythPricesAndGenerateTrades(useFallback = false): Promise<Tr
 
       if (!response.ok) {
         if (!useFallback) {
-          return fetchPythPricesAndGenerateTrades(true);
+          return fetchPythPricesAndGenerateTrades(tokens, feedIdToToken, true);
         }
         continue;
       }
@@ -129,7 +136,7 @@ async function fetchPythPricesAndGenerateTrades(useFallback = false): Promise<Tr
     } catch (error) {
       console.error('Pyth fetch error:', error);
       if (!useFallback) {
-        return fetchPythPricesAndGenerateTrades(true);
+        return fetchPythPricesAndGenerateTrades(tokens, feedIdToToken, true);
       }
     }
   }
@@ -152,8 +159,12 @@ export async function GET(request: Request) {
   const since = parseInt(searchParams.get('since') || '0', 10);
 
   try {
+    // Fetch tokens from CFL API (cached)
+    const tokens = await fetchTokensFromCFL();
+    const feedIdToToken = buildFeedIdLookup(tokens);
+
     // Fetch new prices and generate trades from price movements
-    await fetchPythPricesAndGenerateTrades();
+    await fetchPythPricesAndGenerateTrades(tokens, feedIdToToken);
 
     // Filter by timestamp
     const filteredTrades = tradeCache.filter(t => t.timestamp > since);

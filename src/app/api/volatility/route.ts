@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { loadTokenList } from '@/lib/tokens';
+import { fetchTokensFromCFL } from '@/lib/tokenService';
 import { fetchTokenPricesWithCache } from '@/lib/priceService';
 import { calculateVolatilityScores } from '@/lib/volatility';
 
@@ -8,8 +8,8 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    // Load token list
-    const tokens = await loadTokenList();
+    // Fetch tokens from CFL API (cached)
+    const tokens = await fetchTokensFromCFL();
 
     // Fetch current prices
     const priceData = await fetchTokenPricesWithCache(tokens);
