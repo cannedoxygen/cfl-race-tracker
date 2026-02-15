@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { performJackpotDraw } from '@/lib/jackpot';
 
-const ADMIN_KEY = process.env.REFERRAL_ADMIN_KEY || 'cfl-admin-2024';
-
 export async function POST(request: NextRequest) {
   try {
+    const adminKey = process.env.REFERRAL_ADMIN_KEY;
+    if (!adminKey) {
+      console.error('REFERRAL_ADMIN_KEY not configured');
+      return NextResponse.json(
+        { success: false, message: 'Server misconfigured' },
+        { status: 500 }
+      );
+    }
+
     const authHeader = request.headers.get('x-admin-key');
-    if (authHeader !== ADMIN_KEY) {
+    if (authHeader !== adminKey) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }

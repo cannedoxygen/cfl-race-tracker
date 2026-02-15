@@ -124,12 +124,12 @@ export function JackpotDisplay() {
             <div className="flex justify-between items-center">
               <span className="font-pixel text-[8px] text-cfl-text-muted">WALLET:</span>
               <a
-                href="https://solscan.io/account/8BitCWk3rnxhmAPyWnd41xt9hiq423erXXJKkea61TUf"
+                href="https://solscan.io/account/8BitDWkraozroK1yfVf2pW3T2kkCrzRVA9rEh5gL8f3m"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-pixel-body text-sm text-cfl-teal hover:text-cfl-green transition-colors underline"
               >
-                8Bit...1TUf
+                8Bit...f3m
               </a>
             </div>
           </div>

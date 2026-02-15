@@ -4,7 +4,6 @@ import { takeEarningsSnapshot } from '@/lib/referral';
 
 const CFL_API_BASE = 'https://v12-cfl-backend-production.up.railway.app';
 const USER_PUBLIC_KEY = '8VdX3RKQSTa98vaJsQiMoktcjYXNwaRcM3144KuodPcD';
-const ADMIN_KEY = process.env.REFERRAL_ADMIN_KEY || 'cfl-admin-2024';
 
 function getCurrentWeekId(): string {
   const now = new Date();
@@ -19,8 +18,17 @@ function getCurrentWeekId(): string {
 export async function POST(request: NextRequest) {
   try {
     // Check admin authorization
+    const adminKey = process.env.REFERRAL_ADMIN_KEY;
+    if (!adminKey) {
+      console.error('REFERRAL_ADMIN_KEY not configured');
+      return NextResponse.json(
+        { success: false, message: 'Server misconfigured' },
+        { status: 500 }
+      );
+    }
+
     const authHeader = request.headers.get('x-admin-key');
-    if (authHeader !== ADMIN_KEY) {
+    if (authHeader !== adminKey) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }

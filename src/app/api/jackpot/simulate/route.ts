@@ -3,12 +3,17 @@ import { pickWinner, getJackpotBalance } from '@/lib/jackpot';
 import { supabase } from '@/lib/supabase';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
-const ADMIN_KEY = process.env.REFERRAL_ADMIN_KEY || 'cfl-admin-2024';
 const JACKPOT_PER_TICKET_LAMPORTS = 10_000_000; // 0.01 SOL
 
 export async function GET(request: NextRequest) {
+  const adminKey = process.env.REFERRAL_ADMIN_KEY;
+  if (!adminKey) {
+    console.error('REFERRAL_ADMIN_KEY not configured');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
+
   const authHeader = request.headers.get('x-admin-key');
-  if (authHeader !== ADMIN_KEY) {
+  if (authHeader !== adminKey) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
