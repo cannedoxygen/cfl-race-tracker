@@ -4,8 +4,8 @@ import { fetchTokensFromCFL } from '@/lib/tokenService';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// CFL's Pyth RPC endpoint
-const PYTH_HERMES_URL = 'https://cfl-pythnet-2711.mainnet.pythnet.rpcpool.com/hermes/v2/updates/price/latest';
+// Pyth Hermes endpoints
+const PYTH_HERMES_URL = 'https://hermes.pyth.network/v2/updates/price/latest';
 const PYTH_HERMES_FALLBACK = 'https://hermes.pyth.network/v2/updates/price/latest';
 
 interface PythPriceData {

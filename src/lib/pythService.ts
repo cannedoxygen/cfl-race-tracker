@@ -1,10 +1,8 @@
 // Pyth Network Price Service
 // Fetches real-time prices from Pyth Hermes API
 
-// CFL's Pyth RPC endpoint (from their frontend)
-const PYTH_HERMES_URL = 'https://cfl-pythnet-2711.mainnet.pythnet.rpcpool.com/hermes/v2/updates/price/latest';
-
-// Fallback to public Pyth endpoint if CFL's endpoint fails
+// Pyth Hermes endpoints (public)
+const PYTH_HERMES_URL = 'https://hermes.pyth.network/v2/updates/price/latest';
 const PYTH_HERMES_FALLBACK = 'https://hermes.pyth.network/v2/updates/price/latest';
 
 export interface PythPriceData {

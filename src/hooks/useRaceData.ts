@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useRaceStore } from '@/store/raceStore';
-import { MatchMode, TrackType, Token } from '@/types';
-import { DEFAULT_TOKENS, getTokensByTrack, getTokens } from '@/lib/tokens';
-import { getCFLPriceSSE, ParsedPrice } from '@/lib/cflPriceSSE';
+import { MatchMode, TrackType } from '@/types';
+import { DEFAULT_TOKENS, getTokensByTrack } from '@/lib/tokens';
 
 interface PriceUpdate {
   mint: string;
@@ -35,127 +34,66 @@ export function useRaceData() {
     dismissAlert,
   } = useRaceStore();
 
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const raceStartTimeRef = useRef<number | null>(null);
-  const startPricesRef = useRef<Map<string, number>>(new Map());
-  const lazerIdToTokenRef = useRef<Map<string, Token>>(new Map());
-  const sseUnsubscribeRef = useRef<(() => void) | null>(null);
-
-  // Build pythLazerId -> Token lookup
-  const buildTokenLookup = useCallback(() => {
-    const tokens = getTokens();
-    const lookup = new Map<string, Token>();
-    for (const token of tokens) {
-      if (token.pythLazerId) {
-        lookup.set(token.pythLazerId, token);
-      }
-    }
-    lazerIdToTokenRef.current = lookup;
-    return tokens;
-  }, []);
 
   // Initialize positions on mount
   useEffect(() => {
     initializePositions(DEFAULT_TOKENS);
-    buildTokenLookup();
-  }, [initializePositions, buildTokenLookup]);
+  }, [initializePositions]);
 
-  // Handle SSE price updates
-  const handleSSEPriceUpdate = useCallback((ssePrices: Map<string, ParsedPrice>) => {
-    if (status !== 'racing') return;
+  // Fetch prices and calculate % changes
+  const fetchPrices = useCallback(async () => {
+    if (status !== 'racing' || !raceStartTimeRef.current) return;
 
-    const lookup = lazerIdToTokenRef.current;
-    const startPrices = startPricesRef.current;
-    const priceUpdates: PriceUpdate[] = [];
+    try {
+      const response = await fetch(`/api/race-prices?startTime=${raceStartTimeRef.current}`);
 
-    for (const [pythLazerId, priceData] of ssePrices) {
-      const token = lookup.get(pythLazerId);
-      if (!token) continue;
+      if (!response.ok) return;
 
-      // Set start price if not already set
-      if (!startPrices.has(pythLazerId)) {
-        startPrices.set(pythLazerId, priceData.price);
+      const data = await response.json();
+
+      if (data.prices && data.prices.length > 0) {
+        updatePrices(data.prices as PriceUpdate[]);
       }
-
-      const startPrice = startPrices.get(pythLazerId) || priceData.price;
-      const percentChange = startPrice > 0
-        ? ((priceData.price - startPrice) / startPrice) * 100
-        : 0;
-
-      priceUpdates.push({
-        mint: token.mint,
-        symbol: token.symbol,
-        boost: token.boost,
-        startPrice,
-        currentPrice: priceData.price,
-        percentChange,
-      });
-    }
-
-    if (priceUpdates.length > 0) {
-      updatePrices(priceUpdates);
+    } catch (error) {
+      console.error('Error fetching prices:', error);
     }
   }, [status, updatePrices]);
 
-  // Start race with SSE connection
+  // Start race with price baseline
   const startRace = useCallback(async () => {
     const now = Date.now();
     raceStartTimeRef.current = now;
 
-    // Clear start prices for new race
-    startPricesRef.current.clear();
-
-    // Build token lookup
-    const tokens = buildTokenLookup();
-
-    // Get token symbols for SSE connection
-    const symbols = tokens
-      .filter(t => t.pythLazerId)
-      .map(t => t.symbol);
-
-    if (symbols.length === 0) {
-      console.error('No tokens with pythLazerId found');
-      return;
+    // Initialize race in the API (stores starting prices)
+    try {
+      await fetch(`/api/race-prices?action=start&startTime=${now}`);
+    } catch (error) {
+      console.error('Failed to start race in API:', error);
     }
-
-    // Connect to CFL SSE
-    const sse = getCFLPriceSSE();
-
-    // Subscribe to price updates
-    sseUnsubscribeRef.current = sse.subscribe(handleSSEPriceUpdate);
-
-    // Connect to SSE with token symbols
-    sse.connect(symbols);
-
-    console.log('[Race] Started with SSE connection, tokens:', symbols.length);
 
     // Start the race in the store
     storeStartRace();
-  }, [storeStartRace, buildTokenLookup, handleSSEPriceUpdate]);
+  }, [storeStartRace]);
 
   // Reset race
   const resetRace = useCallback(async () => {
     raceStartTimeRef.current = null;
 
-    // Clear start prices
-    startPricesRef.current.clear();
-
-    // Disconnect SSE
-    if (sseUnsubscribeRef.current) {
-      sseUnsubscribeRef.current();
-      sseUnsubscribeRef.current = null;
+    // Reset in API
+    try {
+      await fetch('/api/race-prices?action=reset');
+    } catch (error) {
+      console.error('Failed to reset race in API:', error);
     }
-    const sse = getCFLPriceSSE();
-    sse.disconnect();
-    sse.clearPrices();
-
-    console.log('[Race] Reset, SSE disconnected');
 
     // Reset in store
     storeResetRace();
   }, [storeResetRace]);
 
-  // Manage SSE connection based on race status
+  // Start/stop polling based on race status
   useEffect(() => {
     if (status === 'racing') {
       // Store the start time if resuming
@@ -163,17 +101,20 @@ export function useRaceData() {
         raceStartTimeRef.current = startTime;
       }
 
+      // Poll for prices every 2 seconds
+      pollingRef.current = setInterval(fetchPrices, 2000);
+
       // Update elapsed time every second
       timerRef.current = setInterval(updateElapsedTime, 1000);
 
-    } else if (status === 'paused') {
-      // Keep SSE connected but stop timer when paused
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+      // Immediate fetch on start
+      fetchPrices();
     } else {
-      // Idle state - disconnect SSE
+      // Clear intervals when not racing
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -181,20 +122,10 @@ export function useRaceData() {
     }
 
     return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [status, startTime, updateElapsedTime]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (sseUnsubscribeRef.current) {
-        sseUnsubscribeRef.current();
-      }
-      const sse = getCFLPriceSSE();
-      sse.disconnect();
-    };
-  }, []);
+  }, [status, startTime, fetchPrices, updateElapsedTime]);
 
   // Generate chart data from position histories (limited to last 10 min)
   const chartData = useCallback(() => {
