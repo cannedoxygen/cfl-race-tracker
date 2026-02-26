@@ -1,11 +1,12 @@
 import { Token, TrackType, PlayerPosition } from '@/types';
+import staticTokenData from '@/data/tokens.json';
 
 // CFL Backend API
 const CFL_TOKEN_API = 'https://v12-cfl-backend-production.up.railway.app/token/list?page=1&limit=500';
 
 // CFL API token structure
 interface CFLApiToken {
-  pythFeedId: string;
+  pythFeedId?: string;
   coinGeckoId: string;
   solanaPythFeedId: string;
   tokenName: string;
@@ -19,6 +20,20 @@ interface CFLApiToken {
   priceChange7d: number;
   playerCard: string;
   position: string;
+}
+
+// Build a lookup map from coinGeckoId to pythFeedId from static data
+// This is needed because the live CFL API doesn't return pythFeedId
+const pythFeedIdLookup = new Map<string, string>();
+const staticData = (staticTokenData as { data: CFLApiToken[] }).data;
+for (const token of staticData) {
+  if (token.pythFeedId && token.coinGeckoId) {
+    pythFeedIdLookup.set(token.coinGeckoId, token.pythFeedId);
+  }
+  // Also map by symbol as fallback
+  if (token.pythFeedId && token.tokenSymbol) {
+    pythFeedIdLookup.set(token.tokenSymbol.toLowerCase(), token.pythFeedId);
+  }
 }
 
 // Server-side cache
@@ -37,6 +52,16 @@ function getTrackFromBoost(boost: number): TrackType {
 // Convert CFL API token to our Token format
 function convertCFLToken(apiToken: CFLApiToken): Token {
   const boost = apiToken.currentPower || apiToken.lastPower || 0;
+
+  // Get pythFeedId from API response, or look it up from static data
+  let pythFeedId = apiToken.pythFeedId;
+  if (!pythFeedId && apiToken.coinGeckoId) {
+    pythFeedId = pythFeedIdLookup.get(apiToken.coinGeckoId);
+  }
+  if (!pythFeedId && apiToken.tokenSymbol) {
+    pythFeedId = pythFeedIdLookup.get(apiToken.tokenSymbol.toLowerCase());
+  }
+
   return {
     symbol: apiToken.tokenSymbol.toUpperCase(),
     mint: apiToken.coinGeckoId || apiToken.tokenSymbol.toLowerCase(),
@@ -45,7 +70,7 @@ function convertCFLToken(apiToken: CFLApiToken): Token {
     boost,
     track: getTrackFromBoost(boost),
     position: apiToken.position as PlayerPosition,
-    pythFeedId: apiToken.pythFeedId,
+    pythFeedId,
     solanaPythFeedId: apiToken.solanaPythFeedId,
     pythLazerId: apiToken.pythLazerId?.toString(),
     coinGeckoId: apiToken.coinGeckoId,
