@@ -186,7 +186,7 @@ export function Dashboard() {
             </div>
 
             {/* Hourly Top Mover */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[280px] card-pixel p-2 overflow-hidden">
               <HourlyTopMover
                 positions={positions}
                 selectedToken={selectedToken}
