@@ -30,7 +30,7 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
   useEffect(() => {
     const checkHourReset = () => {
       const now = Date.now();
-      const hourElapsed = now - hourStartTime.current >= 3600000; // 1 hour in ms
+      const hourElapsed = now - hourStartTime.current >= 3600000;
 
       if (hourElapsed) {
         volatilityAccumulator.current.clear();
@@ -38,7 +38,7 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
       }
     };
 
-    const interval = setInterval(checkHourReset, 60000); // Check every minute
+    const interval = setInterval(checkHourReset, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -53,9 +53,8 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
       const absChange = Math.abs(pos.position);
 
       if (existing) {
-        // Add to accumulated volatility (sum of absolute changes)
         volatilityAccumulator.current.set(pos.mint, {
-          volatility: existing.volatility + absChange * 0.1, // Scale down since we update frequently
+          volatility: existing.volatility + absChange * 0.1,
           peakChange: Math.max(existing.peakChange, absChange),
           lastUpdate: now,
         });
@@ -68,7 +67,7 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
       }
     });
 
-    // Find top 3 movers based on accumulated volatility
+    // Find top 3 movers
     const sortedMovers: { mint: string; volatility: number }[] = [];
     volatilityAccumulator.current.forEach((data, mint) => {
       sortedMovers.push({ mint, volatility: data.volatility });
@@ -96,7 +95,7 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
     setTopMovers(top3);
   }, [positions]);
 
-  // Calculate time remaining in current hour
+  // Time remaining
   const getTimeRemaining = () => {
     const elapsed = Date.now() - hourStartTime.current;
     const remaining = Math.max(0, 3600000 - elapsed);
@@ -114,7 +113,8 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
     return () => clearInterval(interval);
   }, []);
 
-  const rankColors = ['text-cfl-gold', 'text-gray-400', 'text-amber-600'];
+  const rankColors = ['border-cfl-gold', 'border-gray-400', 'border-amber-600'];
+  const rankBgColors = ['from-cfl-gold/20', 'from-gray-400/20', 'from-amber-600/20'];
   const rankLabels = ['1ST', '2ND', '3RD'];
 
   if (topMovers.length === 0) {
@@ -122,14 +122,12 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
-            <span className="text-cfl-pink">*</span> HOURLY MOVERS
+            <span className="text-cfl-pink">★</span> HOURLY TOP MOVERS
           </h2>
+          <span className="font-pixel-body text-[10px] text-cfl-pink">{timeRemaining}</span>
         </div>
         <div className="flex-1 flex items-center justify-center text-cfl-text-muted">
-          <div className="text-center">
-            <div className="text-2xl mb-1">*</div>
-            <p className="font-pixel text-[8px]">TRACKING...</p>
-          </div>
+          <p className="font-pixel text-[8px]">TRACKING...</p>
         </div>
       </div>
     );
@@ -139,14 +137,13 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-2">
         <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
-          <span className="text-cfl-pink">*</span> HOURLY MOVERS
+          <span className="text-cfl-pink">★</span> HOURLY TOP MOVERS
         </h2>
-        <span className="font-pixel-body text-[10px] text-cfl-pink">
-          {timeRemaining}
-        </span>
+        <span className="font-pixel-body text-[10px] text-cfl-pink">{timeRemaining}</span>
       </div>
 
-      <div className="flex-1 flex flex-col gap-1.5 overflow-hidden">
+      {/* 3 big icons side by side */}
+      <div className="flex-1 flex gap-2 items-stretch">
         {topMovers.map((mover, index) => {
           const isSelected = selectedToken === mover.mint;
 
@@ -155,60 +152,76 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
               key={mover.mint}
               onClick={() => onSelectToken(isSelected ? null : mover.mint)}
               className={clsx(
-                'flex items-center gap-2 p-1.5 rounded-lg transition-all',
-                'border bg-cfl-bg/50 hover:bg-cfl-border/30',
-                index === 0 ? 'border-cfl-pink/40' : 'border-cfl-border',
-                isSelected && 'ring-1 ring-cfl-pink'
+                'flex-1 flex flex-col items-center justify-center p-2 rounded-lg transition-all',
+                `border-2 ${rankColors[index]} bg-gradient-to-b ${rankBgColors[index]} to-transparent`,
+                'hover:scale-105',
+                isSelected && 'ring-2 ring-white shadow-lg'
               )}
             >
-              {/* Rank */}
-              <span className={clsx('font-pixel text-[8px] w-6', rankColors[index])}>
+              {/* Rank label */}
+              <span className={clsx(
+                'font-pixel text-[8px] mb-1',
+                index === 0 ? 'text-cfl-gold' : index === 1 ? 'text-gray-400' : 'text-amber-600'
+              )}>
                 {rankLabels[index]}
               </span>
 
               {/* Token logo */}
               <div
-                className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-                style={{ backgroundColor: `${mover.color}30` }}
+                className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2"
+                style={{
+                  backgroundColor: `${mover.color}30`,
+                  borderColor: mover.color
+                }}
               >
                 {mover.logoURI ? (
                   <Image
                     src={mover.logoURI}
                     alt={mover.symbol}
-                    width={20}
-                    height={20}
+                    width={32}
+                    height={32}
                     className="rounded-full"
                     unoptimized
                   />
                 ) : (
-                  <span className="font-pixel text-[6px]" style={{ color: mover.color }}>
+                  <span className="font-pixel text-xs" style={{ color: mover.color }}>
                     {mover.symbol.slice(0, 2)}
                   </span>
                 )}
               </div>
 
               {/* Symbol */}
-              <span className="font-pixel-body text-xs text-white flex-1 text-left truncate">
+              <span className="font-pixel-body text-sm text-white mt-1 truncate max-w-full">
                 {mover.symbol}
               </span>
 
-              {/* Direction */}
-              <span className={clsx(
-                'font-pixel text-[6px] px-1 py-0.5 rounded',
-                mover.direction === 'long'
-                  ? 'bg-cfl-green/20 text-cfl-green'
-                  : 'bg-cfl-red/20 text-cfl-red'
-              )}>
-                {mover.direction === 'long' ? 'L' : 'S'}
-              </span>
-
-              {/* Peak change */}
-              <span className="font-pixel text-[8px] text-cfl-gold w-12 text-right">
-                {mover.peakChange.toFixed(1)}%
-              </span>
+              {/* Direction & Peak */}
+              <div className="flex items-center gap-1 mt-1">
+                <span className={clsx(
+                  'font-pixel text-[6px] px-1 rounded',
+                  mover.direction === 'long'
+                    ? 'bg-cfl-green/30 text-cfl-green'
+                    : 'bg-cfl-red/30 text-cfl-red'
+                )}>
+                  {mover.direction === 'long' ? 'L' : 'S'}
+                </span>
+                <span className="font-pixel text-[8px] text-cfl-gold">
+                  {mover.peakChange.toFixed(1)}%
+                </span>
+              </div>
             </button>
           );
         })}
+
+        {/* Placeholder slots if less than 3 */}
+        {[...Array(3 - topMovers.length)].map((_, i) => (
+          <div
+            key={`empty-${i}`}
+            className="flex-1 flex flex-col items-center justify-center p-2 rounded-lg border-2 border-cfl-border/30 bg-cfl-bg/30"
+          >
+            <span className="font-pixel text-[8px] text-cfl-text-muted">—</span>
+          </div>
+        ))}
       </div>
     </div>
   );
