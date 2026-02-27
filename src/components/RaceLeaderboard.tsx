@@ -148,23 +148,21 @@ export function RaceLeaderboard({ positions, selectedToken, onSelectToken, match
                     )}
                   </div>
 
-                  {/* Symbol + Direction */}
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="font-pixel-body text-base text-white truncate">
-                      {pos.symbol}
-                    </span>
-                    <span className={clsx(
-                      'font-pixel text-[6px] px-1.5 py-0.5 rounded border',
-                      isPositive
-                        ? 'bg-cfl-green/20 text-cfl-green border-cfl-green/30'
-                        : 'bg-cfl-red/20 text-cfl-red border-cfl-red/30'
-                    )}>
-                      {isPositive ? 'LONG' : 'SHORT'}
-                    </span>
-                  </div>
+                  {/* Direction + Symbol */}
+                  <span className={clsx(
+                    'font-pixel text-[6px] px-1 rounded flex-shrink-0',
+                    isPositive
+                      ? 'bg-cfl-green/20 text-cfl-green'
+                      : 'bg-cfl-red/20 text-cfl-red'
+                  )}>
+                    {isPositive ? 'L' : 'S'}
+                  </span>
+                  <span className="font-pixel-body text-sm text-white truncate flex-1 min-w-0">
+                    {pos.symbol}
+                  </span>
 
                   {/* % - All displayed as positive (racing UP) */}
-                  <div className="font-pixel text-[8px] min-w-[60px] text-right text-cfl-gold">
+                  <div className="font-pixel text-[8px] w-[50px] text-right text-cfl-gold flex-shrink-0">
                     {absValue.toFixed(2)}%
                   </div>
                 </div>
