@@ -6,6 +6,7 @@ import { UnifiedRaceChart } from './UnifiedRaceChart';
 import { RaceLeaderboard } from './RaceLeaderboard';
 import { AlertPanel } from './AlertPanel';
 import { TopMovers } from './TopMovers';
+import { SmartMovers } from './SmartMovers';
 import { TokenStatsCard } from './TokenStatsCard';
 import { useRaceData } from '@/hooks/useRaceData';
 
@@ -154,41 +155,48 @@ export function Dashboard() {
             style={{ height: bottomHeight }}
             className="hidden md:flex flex-row gap-2 flex-shrink-0"
           >
-            {/* 5 Min Top Movers */}
-            <div className="w-[220px] card-pixel p-2 overflow-hidden">
-              <TopMovers
+            {/* Hot Now */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                intervalMinutes={5}
-                topCount={5}
+                metric="hot"
               />
             </div>
 
-            {/* 15 Min Top Movers */}
-            <div className="w-[220px] card-pixel p-2 overflow-hidden">
-              <TopMovers
+            {/* Momentum */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                intervalMinutes={15}
-                topCount={5}
+                metric="momentum"
               />
             </div>
 
-            {/* 30 Min Top Movers */}
-            <div className="w-[220px] card-pixel p-2 overflow-hidden">
-              <TopMovers
+            {/* Volatile */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                intervalMinutes={30}
-                topCount={5}
+                metric="volatile"
+              />
+            </div>
+
+            {/* Trending */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <SmartMovers
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                metric="trending"
               />
             </div>
 
             {/* Hourly Top Movers */}
-            <div className="w-[280px] card-pixel p-2 overflow-hidden">
+            <div className="w-[260px] card-pixel p-2 overflow-hidden">
               <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -198,8 +206,8 @@ export function Dashboard() {
               />
             </div>
 
-            {/* Leaderboard - narrower width */}
-            <div className="w-[280px] card-pixel p-2 overflow-hidden">
+            {/* Leaderboard */}
+            <div className="w-[240px] card-pixel p-2 overflow-hidden">
               <RaceLeaderboard
                 positions={positions}
                 selectedToken={selectedToken}
@@ -213,30 +221,35 @@ export function Dashboard() {
           {/* Mobile panels - stacked vertically, auto height, scrollable */}
           <div className="flex md:hidden flex-col gap-2 mt-2">
             <div className="min-h-[150px] card-pixel p-3">
-              <TopMovers
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                intervalMinutes={5}
-                topCount={5}
+                metric="hot"
               />
             </div>
             <div className="min-h-[150px] card-pixel p-3">
-              <TopMovers
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                intervalMinutes={15}
-                topCount={5}
+                metric="momentum"
               />
             </div>
             <div className="min-h-[150px] card-pixel p-3">
-              <TopMovers
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                intervalMinutes={30}
-                topCount={5}
+                metric="volatile"
+              />
+            </div>
+            <div className="min-h-[150px] card-pixel p-3">
+              <SmartMovers
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+                metric="trending"
               />
             </div>
             <div className="min-h-[180px] card-pixel p-3">

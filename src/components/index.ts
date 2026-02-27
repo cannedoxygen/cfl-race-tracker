@@ -16,4 +16,5 @@ export { SubscriptionModal } from './SubscriptionModal';
 export { Footer } from './Footer';
 export { HourlyTopMover } from './HourlyTopMover';
 export { TopMovers } from './TopMovers';
+export { SmartMovers } from './SmartMovers';
 export { TokenStatsCard } from './TokenStatsCard';
