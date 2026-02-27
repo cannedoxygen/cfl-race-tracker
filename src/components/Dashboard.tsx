@@ -155,7 +155,7 @@ export function Dashboard() {
             className="hidden md:flex flex-row gap-2 flex-shrink-0"
           >
             {/* 5 Min Top Movers */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -166,7 +166,7 @@ export function Dashboard() {
             </div>
 
             {/* 15 Min Top Movers */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -177,7 +177,7 @@ export function Dashboard() {
             </div>
 
             {/* 30 Min Top Movers */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
