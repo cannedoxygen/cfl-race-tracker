@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useRaceStore } from '@/store/raceStore';
-import { TrackType } from '@/types';
 import clsx from 'clsx';
 import { SubscriptionModal } from './SubscriptionModal';
 
@@ -23,14 +22,6 @@ function formatTime(seconds: number): string {
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
-
-const TRACK_CONFIG: { id: TrackType | 'all'; label: string; color: string }[] = [
-  { id: 'all', label: 'ALL', color: 'bg-gray-600' },
-  { id: 'aggressive', label: 'AGG', color: 'bg-purple-600' },
-  { id: 'balanced', label: 'BAL', color: 'bg-blue-600' },
-  { id: 'moderate', label: 'MOD', color: 'bg-yellow-600' },
-  { id: 'conservative', label: 'CON', color: 'bg-gray-500' },
-];
 
 export function Header({ activeTab, onTabChange }: Props) {
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
@@ -106,13 +97,10 @@ export function Header({ activeTab, onTabChange }: Props) {
 
   const {
     status,
-    matchMode,
-    selectedTrack,
     elapsedTime,
     startRace,
     pauseRace,
     resetRace,
-    setSelectedTrack,
   } = useRaceStore();
 
   // Check subscription and start race
@@ -165,26 +153,6 @@ export function Header({ activeTab, onTabChange }: Props) {
       {/* Center: Race Controls (only on race tab) */}
       {activeTab === 'race' && (
         <div className="flex items-center gap-2 flex-1 justify-center min-w-0">
-          {/* Track Selector - Desktop only */}
-          <div className="hidden lg:flex rounded-lg overflow-hidden border-2 border-cfl-border shadow-pixel-sm">
-            {TRACK_CONFIG.map((track) => (
-              <button
-                key={track.id}
-                onClick={() => setSelectedTrack(track.id)}
-                disabled={status === 'racing'}
-                className={clsx(
-                  'px-2 py-1.5 font-pixel text-[7px] transition-all',
-                  selectedTrack === track.id
-                    ? `${track.color} text-white shadow-inner`
-                    : 'bg-cfl-bg text-cfl-text-muted hover:text-white hover:bg-cfl-border',
-                  status === 'racing' && 'opacity-50 cursor-not-allowed'
-                )}
-              >
-                {track.label}
-              </button>
-            ))}
-          </div>
-
           {/* Timer */}
           <div className="timer-pixel flex items-center gap-1.5 px-2 py-1">
             <div
