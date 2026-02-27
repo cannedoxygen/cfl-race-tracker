@@ -149,17 +149,17 @@ export function RaceLeaderboard({ positions, selectedToken, onSelectToken, match
                   </div>
 
                   {/* Symbol + Direction */}
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="font-pixel-body text-base text-white truncate">
-                      {pos.symbol}
-                    </span>
+                  <div className="flex items-center gap-1 min-w-0 flex-1">
                     <span className={clsx(
-                      'font-pixel text-[6px] px-1.5 py-0.5 rounded border',
+                      'font-pixel text-[6px] px-1 rounded',
                       isPositive
-                        ? 'bg-cfl-green/20 text-cfl-green border-cfl-green/30'
-                        : 'bg-cfl-red/20 text-cfl-red border-cfl-red/30'
+                        ? 'bg-cfl-green/20 text-cfl-green'
+                        : 'bg-cfl-red/20 text-cfl-red'
                     )}>
-                      {isPositive ? 'LONG' : 'SHORT'}
+                      {isPositive ? 'L' : 'S'}
+                    </span>
+                    <span className="font-pixel-body text-sm text-white truncate">
+                      {pos.symbol}
                     </span>
                   </div>
 
