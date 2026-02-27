@@ -20,6 +20,7 @@ interface MoverData {
   color: string;
   accumulatedVolatility: number;
   peakChange: number;
+  currentChange: number; // Rolling 60s change (like leaderboard)
   direction: 'long' | 'short';
 }
 
@@ -89,6 +90,7 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
           color: pos.color,
           accumulatedVolatility: accData.volatility,
           peakChange: accData.peakChange,
+          currentChange: pos.position, // Rolling 60s change
           direction: pos.position >= 0 ? 'long' : 'short',
         } as MoverData;
       }
@@ -204,9 +206,18 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
                   {mover.direction === 'long' ? 'LONG' : 'SHORT'}
                 </span>
 
-                <span className="font-pixel text-[8px] text-cfl-gold mt-0.5">
-                  {mover.peakChange.toFixed(2)}%
-                </span>
+                {/* Two numbers: current rolling change + peak */}
+                <div className="flex flex-col items-center mt-0.5">
+                  <span className={clsx(
+                    'font-pixel text-[8px]',
+                    mover.currentChange >= 0 ? 'text-cfl-green' : 'text-cfl-red'
+                  )}>
+                    {mover.currentChange >= 0 ? '+' : ''}{mover.currentChange.toFixed(2)}%
+                  </span>
+                  <span className="font-pixel text-[6px] text-cfl-gold">
+                    ⬆{mover.peakChange.toFixed(2)}%
+                  </span>
+                </div>
               </button>
             );
           })}
