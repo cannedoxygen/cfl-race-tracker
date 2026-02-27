@@ -156,7 +156,7 @@ export function Dashboard() {
             className="hidden md:flex flex-row gap-2 flex-shrink-0"
           >
             {/* Hot Now */}
-            <div className="w-[195px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -166,7 +166,7 @@ export function Dashboard() {
             </div>
 
             {/* Momentum */}
-            <div className="w-[195px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -176,7 +176,7 @@ export function Dashboard() {
             </div>
 
             {/* Volatile */}
-            <div className="w-[195px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -186,7 +186,7 @@ export function Dashboard() {
             </div>
 
             {/* Trending */}
-            <div className="w-[195px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -196,7 +196,7 @@ export function Dashboard() {
             </div>
 
             {/* Hourly Top Movers */}
-            <div className="w-[290px] card-pixel p-2 overflow-hidden">
+            <div className="w-[260px] card-pixel p-2 overflow-hidden">
               <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -207,7 +207,7 @@ export function Dashboard() {
             </div>
 
             {/* Leaderboard */}
-            <div className="w-[220px] card-pixel p-2 overflow-hidden">
+            <div className="w-[240px] card-pixel p-2 overflow-hidden">
               <RaceLeaderboard
                 positions={positions}
                 selectedToken={selectedToken}
