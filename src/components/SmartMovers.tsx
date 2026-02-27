@@ -44,8 +44,16 @@ const DESCRIPTIONS: Record<MetricType, string> = {
   trending: 'Steady dir',
 };
 
+const INFO_DETAILS: Record<MetricType, string> = {
+  hot: 'Tokens with the biggest price movement in the last 30 seconds. Great for catching sudden pumps or dumps as they happen.',
+  momentum: 'Tokens where price movement is speeding up. If a token was moving slow but now moving fast, it ranks high here.',
+  volatile: 'Tokens with the most price swings (up and down). High volatility = more trading opportunities but more risk.',
+  trending: 'Tokens moving consistently in one direction. Less choppy, more predictable movement for trend followers.',
+};
+
 export function SmartMovers({ positions, selectedToken, onSelectToken, metric }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
+  const [showInfo, setShowInfo] = useState(false);
   const historyRef = useRef<Map<string, TokenHistory>>(new Map());
   const maxHistoryLength = 30; // Keep last 30 data points (~60 seconds at 2s updates)
 
@@ -174,13 +182,33 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
 
   if (topMovers.length === 0) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col h-full relative">
+        <button
+          onClick={() => setShowInfo(!showInfo)}
+          className="flex items-center justify-between mb-2 w-full hover:opacity-80 transition-opacity"
+        >
           <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
             <span className="text-cfl-pink">★</span> {TITLES[metric]}
+            <span className="text-cfl-text-muted text-[6px]">ⓘ</span>
           </h2>
           <span className="font-pixel text-[6px] text-cfl-text-muted">{DESCRIPTIONS[metric]}</span>
-        </div>
+        </button>
+
+        {/* Info popup */}
+        {showInfo && (
+          <div className="absolute top-6 left-0 right-0 z-20 bg-cfl-card border-2 border-cfl-pink rounded-lg p-2 shadow-lg animate-slideUp">
+            <p className="font-pixel-body text-[10px] text-cfl-text-muted leading-relaxed">
+              {INFO_DETAILS[metric]}
+            </p>
+            <button
+              onClick={() => setShowInfo(false)}
+              className="font-pixel text-[6px] text-cfl-pink mt-1 hover:underline"
+            >
+              GOT IT
+            </button>
+          </div>
+        )}
+
         <div className="flex-1 flex items-center justify-center text-cfl-text-muted">
           <p className="font-pixel text-[8px]">TRACKING...</p>
         </div>
@@ -189,13 +217,32 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-2">
+    <div className="flex flex-col h-full relative">
+      <button
+        onClick={() => setShowInfo(!showInfo)}
+        className="flex items-center justify-between mb-2 w-full hover:opacity-80 transition-opacity"
+      >
         <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
           <span className="text-cfl-pink">★</span> {TITLES[metric]}
+          <span className="text-cfl-text-muted text-[6px]">ⓘ</span>
         </h2>
         <span className="font-pixel text-[6px] text-cfl-text-muted">{DESCRIPTIONS[metric]}</span>
-      </div>
+      </button>
+
+      {/* Info popup */}
+      {showInfo && (
+        <div className="absolute top-6 left-0 right-0 z-20 bg-cfl-card border-2 border-cfl-pink rounded-lg p-2 shadow-lg animate-slideUp">
+          <p className="font-pixel-body text-[10px] text-cfl-text-muted leading-relaxed">
+            {INFO_DETAILS[metric]}
+          </p>
+          <button
+            onClick={() => setShowInfo(false)}
+            className="font-pixel text-[6px] text-cfl-pink mt-1 hover:underline"
+          >
+            GOT IT
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col gap-1 overflow-hidden">
         {topMovers.map((mover, index) => {

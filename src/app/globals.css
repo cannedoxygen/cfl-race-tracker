@@ -399,3 +399,19 @@ button, .no-select {
     padding: 6px 12px;
   }
 }
+
+/* Slide up animation for info popups */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 200ms ease-out forwards;
+}
