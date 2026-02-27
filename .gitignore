@@ -48,3 +48,4 @@ supabase-schema.sql
 .env.check
 .env.prod
 .env.local
+.env*.local
