@@ -156,7 +156,7 @@ export function Dashboard() {
             className="hidden md:flex flex-row gap-2 flex-shrink-0"
           >
             {/* Hot Now */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -166,7 +166,7 @@ export function Dashboard() {
             </div>
 
             {/* Momentum */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -176,7 +176,7 @@ export function Dashboard() {
             </div>
 
             {/* Volatile */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
@@ -186,7 +186,7 @@ export function Dashboard() {
             </div>
 
             {/* Trending */}
-            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
               <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}

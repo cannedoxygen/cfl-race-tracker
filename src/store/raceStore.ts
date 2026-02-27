@@ -218,6 +218,27 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       if (velocity > 0.1) momentum = velocity > 0.5 ? 'strong_buy' : 'buy';
       else if (velocity < -0.1) momentum = velocity < -0.5 ? 'strong_sell' : 'sell';
 
+      // Derive buy/sell pressure from price movement
+      // Count up moves vs down moves in recent history
+      let upMoves = 0;
+      let downMoves = 0;
+      for (let i = 1; i < recentHistory.length; i++) {
+        const diff = recentHistory[i].position - recentHistory[i - 1].position;
+        if (diff > 0.001) upMoves++;
+        else if (diff < -0.001) downMoves++;
+      }
+      // Add current move
+      if (recentHistory.length > 0) {
+        const lastDiff = update.percentChange - recentHistory[recentHistory.length - 1].position;
+        if (lastDiff > 0.001) upMoves++;
+        else if (lastDiff < -0.001) downMoves++;
+      }
+
+      const totalMoves = upMoves + downMoves;
+      const derivedBuyRatio = totalMoves > 0 ? upMoves / totalMoves : 0.5;
+      const derivedBuyCount = upMoves;
+      const derivedSellCount = downMoves;
+
       // Trim history to last 10 minutes to prevent memory leak
       const tenMinutesAgo = now - 10 * 60 * 1000;
       const trimmedHistory = pos.history.filter(h => h.timestamp >= tenMinutesAgo);
@@ -233,6 +254,10 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
         velocity,
         volatility5m,
         momentum,
+        // Derived buy/sell pressure from price movement
+        buyCount: derivedBuyCount,
+        sellCount: derivedSellCount,
+        buyRatio: derivedBuyRatio,
         history: [
           ...trimmedHistory,
           { timestamp: now, position: update.percentChange },
