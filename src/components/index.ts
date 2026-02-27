@@ -15,4 +15,5 @@ export { JackpotDisplay } from './JackpotDisplay';
 export { SubscriptionModal } from './SubscriptionModal';
 export { Footer } from './Footer';
 export { HourlyTopMover } from './HourlyTopMover';
+export { TopMovers } from './TopMovers';
 export { TokenStatsCard } from './TokenStatsCard';

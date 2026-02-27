@@ -5,8 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { UnifiedRaceChart } from './UnifiedRaceChart';
 import { RaceLeaderboard } from './RaceLeaderboard';
 import { AlertPanel } from './AlertPanel';
-import { MostVolatile } from './MostVolatile';
-import { HourlyTopMover } from './HourlyTopMover';
+import { TopMovers } from './TopMovers';
 import { TokenStatsCard } from './TokenStatsCard';
 import { useRaceData } from '@/hooks/useRaceData';
 
@@ -155,42 +154,47 @@ export function Dashboard() {
             style={{ height: bottomHeight }}
             className="hidden md:flex flex-row gap-2 flex-shrink-0"
           >
-            {/* Top Shorts */}
-            <div className="w-[200px] card-pixel p-2 overflow-hidden">
-              <MostVolatile
+            {/* 5 Min Top Movers */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                filter="short"
+                intervalMinutes={5}
+                topCount={5}
               />
             </div>
 
-            {/* Top Longs */}
-            <div className="w-[200px] card-pixel p-2 overflow-hidden">
-              <MostVolatile
+            {/* 15 Min Top Movers */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                filter="long"
+                intervalMinutes={15}
+                topCount={5}
               />
             </div>
 
-            {/* Most Volatile */}
-            <div className="w-[200px] card-pixel p-2 overflow-hidden">
-              <MostVolatile
+            {/* 30 Min Top Movers */}
+            <div className="w-[180px] card-pixel p-2 overflow-hidden">
+              <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                filter="all"
+                intervalMinutes={30}
+                topCount={5}
               />
             </div>
 
-            {/* Hourly Top Mover */}
+            {/* Hourly Top Movers */}
             <div className="w-[280px] card-pixel p-2 overflow-hidden">
-              <HourlyTopMover
+              <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
+                intervalMinutes={60}
+                topCount={3}
               />
             </div>
 
@@ -209,34 +213,39 @@ export function Dashboard() {
           {/* Mobile panels - stacked vertically, auto height, scrollable */}
           <div className="flex md:hidden flex-col gap-2 mt-2">
             <div className="min-h-[150px] card-pixel p-3">
-              <MostVolatile
+              <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                filter="short"
+                intervalMinutes={5}
+                topCount={5}
               />
             </div>
             <div className="min-h-[150px] card-pixel p-3">
-              <MostVolatile
+              <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                filter="long"
+                intervalMinutes={15}
+                topCount={5}
               />
             </div>
             <div className="min-h-[150px] card-pixel p-3">
-              <MostVolatile
+              <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                filter="all"
+                intervalMinutes={30}
+                topCount={5}
               />
             </div>
             <div className="min-h-[180px] card-pixel p-3">
-              <HourlyTopMover
+              <TopMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
+                intervalMinutes={60}
+                topCount={3}
               />
             </div>
             <div className="min-h-[200px] card-pixel p-3">
