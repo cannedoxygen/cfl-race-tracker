@@ -156,7 +156,7 @@ export function Dashboard() {
             className="hidden md:flex flex-row gap-2 flex-shrink-0"
           >
             {/* Top Shorts */}
-            <div className="w-[160px] card-pixel p-2 overflow-hidden">
+            <div className="w-[200px] card-pixel p-2 overflow-hidden">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -166,7 +166,7 @@ export function Dashboard() {
             </div>
 
             {/* Top Longs */}
-            <div className="w-[160px] card-pixel p-2 overflow-hidden">
+            <div className="w-[200px] card-pixel p-2 overflow-hidden">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}
@@ -176,7 +176,7 @@ export function Dashboard() {
             </div>
 
             {/* Most Volatile */}
-            <div className="w-[160px] card-pixel p-2 overflow-hidden">
+            <div className="w-[200px] card-pixel p-2 overflow-hidden">
               <MostVolatile
                 positions={positions}
                 selectedToken={selectedToken}

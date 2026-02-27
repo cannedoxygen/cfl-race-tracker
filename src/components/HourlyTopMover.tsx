@@ -195,20 +195,20 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
                 {mover.symbol}
               </span>
 
-              {/* Direction & Peak */}
-              <div className="flex items-center gap-1 mt-1">
-                <span className={clsx(
-                  'font-pixel text-[6px] px-1 rounded',
-                  mover.direction === 'long'
-                    ? 'bg-cfl-green/30 text-cfl-green'
-                    : 'bg-cfl-red/30 text-cfl-red'
-                )}>
-                  {mover.direction === 'long' ? 'L' : 'S'}
-                </span>
-                <span className="font-pixel text-[8px] text-cfl-gold">
-                  {mover.peakChange.toFixed(1)}%
-                </span>
-              </div>
+              {/* Direction */}
+              <span className={clsx(
+                'font-pixel text-[6px] px-1.5 py-0.5 rounded mt-1',
+                mover.direction === 'long'
+                  ? 'bg-cfl-green/30 text-cfl-green'
+                  : 'bg-cfl-red/30 text-cfl-red'
+              )}>
+                {mover.direction === 'long' ? 'LONG' : 'SHORT'}
+              </span>
+
+              {/* Peak % */}
+              <span className="font-pixel text-[8px] text-cfl-gold mt-0.5">
+                {mover.peakChange.toFixed(2)}%
+              </span>
             </button>
           );
         })}
