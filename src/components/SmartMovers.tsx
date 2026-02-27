@@ -38,24 +38,24 @@ const TITLES: Record<MetricType, string> = {
 };
 
 const DESCRIPTIONS: Record<MetricType, string> = {
-  hot: 'Last 30s',
-  momentum: 'Accelerating',
-  volatile: 'High swings',
-  trending: 'Steady dir',
+  hot: '5 min',
+  momentum: '5 min',
+  volatile: '5 min',
+  trending: '5 min',
 };
 
 const INFO_DETAILS: Record<MetricType, string> = {
-  hot: 'Tokens with the biggest price movement in the last 30 seconds. Great for catching sudden pumps or dumps as they happen.',
-  momentum: 'Tokens where price movement is speeding up. If a token was moving slow but now moving fast, it ranks high here.',
-  volatile: 'Tokens with the most price swings (up and down). High volatility = more trading opportunities but more risk.',
-  trending: 'Tokens moving consistently in one direction. Less choppy, more predictable movement for trend followers.',
+  hot: 'Tokens with the biggest price movement in the last 5 minutes. Great for catching sudden pumps or dumps.',
+  momentum: 'Tokens where price is accelerating over 5 minutes. Moving slow then fast = high momentum.',
+  volatile: 'Tokens with the most price swings in 5 minutes. High volatility = more opportunities but more risk.',
+  trending: 'Tokens moving consistently in one direction over 5 minutes. Less choppy, more predictable.',
 };
 
 export function SmartMovers({ positions, selectedToken, onSelectToken, metric }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
   const [showInfo, setShowInfo] = useState(false);
   const historyRef = useRef<Map<string, TokenHistory>>(new Map());
-  const maxHistoryLength = 30; // Keep last 30 data points (~60 seconds at 2s updates)
+  const maxHistoryLength = 150; // Keep last 150 data points (~5 minutes at 2s updates)
 
   // Track price history for calculations
   useEffect(() => {
@@ -194,23 +194,23 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
           <span className="font-pixel text-[6px] text-cfl-text-muted">{DESCRIPTIONS[metric]}</span>
         </button>
 
-        {/* Info popup */}
-        {showInfo && (
-          <div className="absolute top-6 left-0 right-0 z-20 bg-cfl-card border-2 border-cfl-pink rounded-lg p-2 shadow-lg animate-slideUp">
-            <p className="font-pixel-body text-[10px] text-cfl-text-muted leading-relaxed">
-              {INFO_DETAILS[metric]}
-            </p>
-            <button
-              onClick={() => setShowInfo(false)}
-              className="font-pixel text-[6px] text-cfl-pink mt-1 hover:underline"
-            >
-              GOT IT
-            </button>
-          </div>
-        )}
-
-        <div className="flex-1 flex items-center justify-center text-cfl-text-muted">
+        <div className="flex-1 flex items-center justify-center text-cfl-text-muted relative">
           <p className="font-pixel text-[8px]">TRACKING...</p>
+
+          {/* Info popup - slides up from behind */}
+          {showInfo && (
+            <div className="absolute bottom-0 left-0 right-0 bg-cfl-card border-2 border-cfl-pink rounded-lg p-2 shadow-lg animate-slideFromBottom z-10">
+              <p className="font-pixel-body text-[10px] text-cfl-text-muted leading-relaxed">
+                {INFO_DETAILS[metric]}
+              </p>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowInfo(false); }}
+                className="font-pixel text-[6px] text-cfl-pink mt-1 hover:underline"
+              >
+                GOT IT
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -229,22 +229,7 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
         <span className="font-pixel text-[6px] text-cfl-text-muted">{DESCRIPTIONS[metric]}</span>
       </button>
 
-      {/* Info popup */}
-      {showInfo && (
-        <div className="absolute top-6 left-0 right-0 z-20 bg-cfl-card border-2 border-cfl-pink rounded-lg p-2 shadow-lg animate-slideUp">
-          <p className="font-pixel-body text-[10px] text-cfl-text-muted leading-relaxed">
-            {INFO_DETAILS[metric]}
-          </p>
-          <button
-            onClick={() => setShowInfo(false)}
-            className="font-pixel text-[6px] text-cfl-pink mt-1 hover:underline"
-          >
-            GOT IT
-          </button>
-        </div>
-      )}
-
-      <div className="flex-1 flex flex-col gap-1 overflow-hidden">
+      <div className="flex-1 flex flex-col gap-1 overflow-hidden relative">
         {topMovers.map((mover, index) => {
           const isSelected = selectedToken === mover.mint;
 
@@ -313,6 +298,21 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
             </button>
           );
         })}
+
+        {/* Info popup - slides up from behind */}
+        {showInfo && (
+          <div className="absolute bottom-0 left-0 right-0 bg-cfl-card border-2 border-cfl-pink rounded-lg p-2 shadow-lg animate-slideFromBottom z-10">
+            <p className="font-pixel-body text-[10px] text-cfl-text-muted leading-relaxed">
+              {INFO_DETAILS[metric]}
+            </p>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowInfo(false); }}
+              className="font-pixel text-[6px] text-cfl-pink mt-1 hover:underline"
+            >
+              GOT IT
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

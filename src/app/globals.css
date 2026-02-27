@@ -415,3 +415,19 @@ button, .no-select {
 .animate-slideUp {
   animation: slideUp 200ms ease-out forwards;
 }
+
+/* Slide from bottom - reveals from behind container */
+@keyframes slideFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideFromBottom {
+  animation: slideFromBottom 250ms ease-out forwards;
+}
