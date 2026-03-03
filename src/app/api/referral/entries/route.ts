@@ -13,6 +13,7 @@ export async function GET() {
       success: true,
       referralCode: REFERRAL_CODE,
       weekId,
+      entries,  // Include the actual entries array for mobile app
       entryCount: entries.length,
       nextDrawing: nextDrawing.toISOString(),
       nextDrawingFormatted: nextDrawing.toLocaleString('en-US', {
