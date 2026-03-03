@@ -1,5 +1,4 @@
 import { Token, TrackType, PlayerPosition } from '@/types';
-import staticTokenData from '@/data/tokens.json';
 
 // CFL Backend API
 const CFL_TOKEN_API = 'https://v12-cfl-backend-production.up.railway.app/token/list?page=1&limit=500';
@@ -8,10 +7,10 @@ const CFL_TOKEN_API = 'https://v12-cfl-backend-production.up.railway.app/token/l
 interface CFLApiToken {
   pythFeedId?: string;
   coinGeckoId: string;
-  solanaPythFeedId: string;
+  solanaPythFeedId?: string | null;
   tokenName: string;
   tokenSymbol: string;
-  tokenImageLogo: string;
+  tokenImageLogo?: string | null;
   pythLazerId: number;
   exponent: number;
   lastPower: number;
@@ -22,24 +21,14 @@ interface CFLApiToken {
   position: string;
 }
 
-// Build a lookup map from coinGeckoId to pythFeedId from static data
-// This is needed because the live CFL API doesn't return pythFeedId
+// pythFeedId lookup is built dynamically from API responses
+// No more static file dependency
 const pythFeedIdLookup = new Map<string, string>();
-const staticData = (staticTokenData as { data: CFLApiToken[] }).data;
-for (const token of staticData) {
-  if (token.pythFeedId && token.coinGeckoId) {
-    pythFeedIdLookup.set(token.coinGeckoId, token.pythFeedId);
-  }
-  // Also map by symbol as fallback
-  if (token.pythFeedId && token.tokenSymbol) {
-    pythFeedIdLookup.set(token.tokenSymbol.toLowerCase(), token.pythFeedId);
-  }
-}
 
-// Server-side cache
+// Server-side cache - short TTL to pick up new tokens quickly
 let serverTokenCache: Token[] | null = null;
 let serverCacheTimestamp = 0;
-const SERVER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const SERVER_CACHE_TTL = 60 * 1000; // 1 minute
 
 // Helper to determine track from boost value
 function getTrackFromBoost(boost: number): TrackType {
@@ -53,8 +42,8 @@ function getTrackFromBoost(boost: number): TrackType {
 function convertCFLToken(apiToken: CFLApiToken): Token {
   const boost = apiToken.currentPower || apiToken.lastPower || 0;
 
-  // Get pythFeedId from API response, or look it up from static data
-  let pythFeedId = apiToken.pythFeedId;
+  // Get pythFeedId from API response - CFL API returns it as solanaPythFeedId
+  let pythFeedId = apiToken.solanaPythFeedId || apiToken.pythFeedId;
   if (!pythFeedId && apiToken.coinGeckoId) {
     pythFeedId = pythFeedIdLookup.get(apiToken.coinGeckoId);
   }
@@ -66,12 +55,12 @@ function convertCFLToken(apiToken: CFLApiToken): Token {
     symbol: apiToken.tokenSymbol.toUpperCase(),
     mint: apiToken.coinGeckoId || apiToken.tokenSymbol.toLowerCase(),
     name: apiToken.tokenName,
-    logoURI: apiToken.tokenImageLogo,
+    logoURI: apiToken.tokenImageLogo || '',
     boost,
     track: getTrackFromBoost(boost),
     position: apiToken.position as PlayerPosition,
     pythFeedId,
-    solanaPythFeedId: apiToken.solanaPythFeedId,
+    solanaPythFeedId: apiToken.solanaPythFeedId || undefined,
     pythLazerId: apiToken.pythLazerId?.toString(),
     coinGeckoId: apiToken.coinGeckoId,
     exponent: apiToken.exponent,
@@ -109,6 +98,16 @@ export async function fetchTokensFromCFL(): Promise<Token[]> {
     const data = await response.json();
 
     if (data.success && Array.isArray(data.data)) {
+      // Build pythFeedId lookup from API response
+      for (const token of data.data) {
+        if (token.solanaPythFeedId && token.coinGeckoId) {
+          pythFeedIdLookup.set(token.coinGeckoId, token.solanaPythFeedId);
+        }
+        if (token.solanaPythFeedId && token.tokenSymbol) {
+          pythFeedIdLookup.set(token.tokenSymbol.toLowerCase(), token.solanaPythFeedId);
+        }
+      }
+
       const tokens = data.data.map(convertCFLToken);
       serverTokenCache = tokens;
       serverCacheTimestamp = now;
@@ -126,16 +125,8 @@ export async function fetchTokensFromCFL(): Promise<Token[]> {
       return serverTokenCache;
     }
 
-    // Last resort: load from static file
-    try {
-      const staticData = await import('@/data/tokens.json');
-      const tokens = (staticData as { data: CFLApiToken[] }).data.map(convertCFLToken);
-      console.log(`[TokenService] Loaded ${tokens.length} tokens from static file`);
-      return tokens;
-    } catch {
-      console.error('[TokenService] Failed to load static fallback');
-      return [];
-    }
+    console.error('[TokenService] No cached data available');
+    return [];
   }
 }
 
