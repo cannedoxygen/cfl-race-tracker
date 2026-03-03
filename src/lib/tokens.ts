@@ -1,8 +1,5 @@
 import { Token, TrackType, PlayerPosition } from '@/types';
 
-// Import static token data as fallback
-import staticTokenData from '@/data/tokens.json';
-
 // Token category types
 export type TokenCategory = 'layer1' | 'meme';
 
@@ -39,7 +36,7 @@ function convertCFLToken(apiToken: CFLApiToken): Token {
     symbol: apiToken.tokenSymbol.toUpperCase(),
     mint: apiToken.coinGeckoId || apiToken.tokenSymbol.toLowerCase(),
     name: apiToken.tokenName,
-    logoURI: apiToken.tokenImageLogo,
+    logoURI: apiToken.tokenImageLogo || apiToken.playerCard,
     boost,
     track: getTrackFromBoost(boost),
     position: apiToken.position as PlayerPosition,
@@ -55,74 +52,83 @@ function convertCFLToken(apiToken: CFLApiToken): Token {
   };
 }
 
-// Token storage - starts with static data, updates from API
+// Token storage - always fetches from API, no static fallback
 // Using a single array that we mutate to keep all references in sync
 const tokenCache: Token[] = [];
 let lastFetchTime = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let isInitialized = false;
+let initPromise: Promise<Token[]> | null = null;
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes - shorter to pick up new tokens faster
 
-// Initialize from static data
-function initializeFromStatic(): void {
-  const apiTokens = (staticTokenData as { data: CFLApiToken[] }).data;
-  const tokens = apiTokens.map(convertCFLToken);
-  tokenCache.length = 0;
-  tokenCache.push(...tokens);
-}
-
-// Initialize cache with static data immediately
-initializeFromStatic();
-
-// Fetch fresh tokens from API
-export async function refreshTokens(): Promise<Token[]> {
+// Fetch fresh tokens from API - always fetches, no static fallback
+export async function refreshTokens(force = false): Promise<Token[]> {
   const now = Date.now();
 
-  // Skip if recently fetched
-  if (tokenCache.length > 0 && (now - lastFetchTime) < CACHE_TTL) {
+  // Skip if recently fetched (unless forced)
+  if (!force && tokenCache.length > 0 && (now - lastFetchTime) < CACHE_TTL) {
     return tokenCache;
   }
 
-  try {
-    // Use absolute URL for server-side, relative for client-side
-    const baseUrl = typeof window === 'undefined'
-      ? process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      : '';
-
-    const response = await fetch(`${baseUrl}/api/tokens`, {
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error(`API returned ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data.success && Array.isArray(data.data)) {
-      const newTokens = data.data.map(convertCFLToken);
-
-      // Mutate the array to keep all references in sync
-      tokenCache.length = 0;
-      tokenCache.push(...newTokens);
-      lastFetchTime = now;
-
-      // Update token colors
-      updateTokenColors();
-
-      if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-        console.log(`[CFL Tokens] Refreshed ${tokenCache.length} tokens from API`);
-      }
-    }
-  } catch (error) {
-    console.error('[CFL Tokens] Failed to refresh from API:', error);
-    // Keep using existing cache
+  // Reuse in-flight request to avoid duplicate fetches
+  if (initPromise && !force) {
+    return initPromise;
   }
 
-  return tokenCache;
+  initPromise = (async () => {
+    try {
+      // Use absolute URL for server-side, relative for client-side
+      const baseUrl = typeof window === 'undefined'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        : '';
+
+      const response = await fetch(`${baseUrl}/api/tokens`, {
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && Array.isArray(data.data)) {
+        const newTokens = data.data.map(convertCFLToken);
+
+        // Mutate the array to keep all references in sync
+        tokenCache.length = 0;
+        tokenCache.push(...newTokens);
+        lastFetchTime = now;
+        isInitialized = true;
+
+        // Update token colors
+        updateTokenColors();
+
+        console.log(`[CFL Tokens] Loaded ${tokenCache.length} tokens from API`);
+      }
+    } catch (error) {
+      console.error('[CFL Tokens] Failed to fetch from API:', error);
+      // No fallback - just return empty cache if API fails
+    }
+
+    initPromise = null;
+    return tokenCache;
+  })();
+
+  return initPromise;
 }
 
 // Get current tokens (sync - uses cache)
+// NOTE: Call refreshTokens() or loadTokenList() first to ensure tokens are loaded
 export function getTokens(): Token[] {
+  if (!isInitialized && tokenCache.length === 0) {
+    console.warn('[CFL Tokens] getTokens called before initialization - call refreshTokens() first');
+  }
   return tokenCache;
+}
+
+// Check if tokens have been loaded
+export function isTokensInitialized(): boolean {
+  return isInitialized && tokenCache.length > 0;
 }
 
 // Token colors for chart lines
@@ -203,16 +209,9 @@ export async function loadTokenList(track?: TrackType | 'all'): Promise<Token[]>
 export const DEFAULT_TOKENS = tokenCache;
 export const CFL_TOKENS = tokenCache;
 
-// Trigger initial API refresh on module load (non-blocking)
+// Trigger initial API fetch on module load (non-blocking)
+// This runs immediately to pre-populate the cache
 if (typeof window !== 'undefined') {
-  // Client-side: refresh tokens after a short delay
-  setTimeout(() => {
-    refreshTokens().catch(console.error);
-  }, 1000);
-}
-
-// Log stats on load (development only)
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  const stats = getTrackStats();
-  console.log(`[CFL Tokens] Initialized with ${stats.total} tokens:`, stats);
+  // Client-side: start fetching tokens immediately
+  refreshTokens().catch(console.error);
 }

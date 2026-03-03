@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useRaceStore } from '@/store/raceStore';
 import { Token } from '@/types';
-import { DEFAULT_TOKENS, getTokens } from '@/lib/tokens';
+import { getTokens, loadTokenList } from '@/lib/tokens';
 import { getCFLPriceSSE, ParsedPrice } from '@/lib/cflPriceSSE';
 import { PRICE_CONFIG, isCflSSEEnabled } from '@/lib/priceConfig';
 
@@ -58,10 +58,16 @@ export function useRaceData() {
     return tokens;
   }, []);
 
-  // Initialize positions on mount
+  // Initialize positions on mount - fetch tokens first like mobile app does
   useEffect(() => {
-    initializePositions(DEFAULT_TOKENS);
-    buildTokenLookup();
+    async function loadTokens() {
+      const tokens = await loadTokenList();
+      if (tokens.length > 0) {
+        initializePositions(tokens);
+        buildTokenLookup();
+      }
+    }
+    loadTokens();
   }, [initializePositions, buildTokenLookup]);
 
   // ============================================

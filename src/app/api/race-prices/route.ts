@@ -3,18 +3,9 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Pyth Hermes endpoints
+// Pyth Hermes endpoint
 const PYTH_HERMES_URL = 'https://hermes.pyth.network/v2/updates/price/latest';
-const PYTH_FEEDS_URL = 'https://hermes.pyth.network/v2/price_feeds?asset_type=crypto';
 const CFL_TOKEN_API = 'https://v12-cfl-backend-production.up.railway.app/token/list?page=1&limit=500';
-
-interface PythFeed {
-  id: string;
-  attributes: {
-    base: string;
-    quote_currency: string;
-  };
-}
 
 interface PythPriceData {
   id: string;
@@ -33,12 +24,8 @@ interface CFLToken {
   currentPower: number;
   lastPower: number;
   tokenImageLogo?: string;
+  solanaPythFeedId: string;  // Use this directly like mobile app
 }
-
-// Cache for Pyth feed mapping (symbol -> feedId)
-let pythFeedMap: Map<string, string> = new Map();
-let pythFeedMapTimestamp = 0;
-const PYTH_FEED_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // Store price history for rolling calculations
 interface PriceHistory {
@@ -56,46 +43,6 @@ let raceStartTime: number | null = null;
 
 function convertPythPrice(rawPrice: string, expo: number): number {
   return parseFloat(rawPrice) * Math.pow(10, expo);
-}
-
-// Fetch and cache Pyth feed mapping
-async function getPythFeedMap(): Promise<Map<string, string>> {
-  const now = Date.now();
-
-  if (pythFeedMap.size > 0 && (now - pythFeedMapTimestamp) < PYTH_FEED_CACHE_TTL) {
-    return pythFeedMap;
-  }
-
-  try {
-    const response = await fetch(PYTH_FEEDS_URL, {
-      headers: { 'Accept': 'application/json' },
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Pyth feeds API returned ${response.status}`);
-    }
-
-    const feeds: PythFeed[] = await response.json();
-    const newMap = new Map<string, string>();
-
-    for (const feed of feeds) {
-      if (feed.attributes.quote_currency === 'USD') {
-        const symbol = feed.attributes.base.toLowerCase();
-        // Store with 0x prefix for consistency
-        newMap.set(symbol, `0x${feed.id}`);
-      }
-    }
-
-    pythFeedMap = newMap;
-    pythFeedMapTimestamp = now;
-    console.log(`[Race Prices] Loaded ${newMap.size} Pyth feed mappings`);
-
-    return newMap;
-  } catch (error) {
-    console.error('[Race Prices] Failed to fetch Pyth feeds:', error);
-    return pythFeedMap; // Return stale cache if available
-  }
 }
 
 // Fetch CFL tokens
@@ -118,16 +65,25 @@ async function fetchCFLTokens(): Promise<CFLToken[]> {
   }
 }
 
+// Normalize feed ID to always have 0x prefix
+function normalizeFeedId(feedId: string): string {
+  return feedId.startsWith('0x') ? feedId : `0x${feedId}`;
+}
+
 // Fetch prices from Pyth for given feed IDs
+// Returns map with normalized feed IDs (with 0x prefix) as keys
 async function fetchPythPrices(feedIds: string[]): Promise<Map<string, number>> {
   const prices = new Map<string, number>();
 
   if (feedIds.length === 0) return prices;
 
+  // Normalize all input feed IDs
+  const normalizedFeedIds = feedIds.map(normalizeFeedId);
+
   const BATCH_SIZE = 50;
 
-  for (let i = 0; i < feedIds.length; i += BATCH_SIZE) {
-    const batch = feedIds.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < normalizedFeedIds.length; i += BATCH_SIZE) {
+    const batch = normalizedFeedIds.slice(i, i + BATCH_SIZE);
 
     try {
       const params = batch.map(id => `ids[]=${encodeURIComponent(id)}`).join('&');
@@ -146,7 +102,7 @@ async function fetchPythPrices(feedIds: string[]): Promise<Map<string, number>> 
       const data = await response.json();
 
       for (const item of data.parsed as PythPriceData[]) {
-        const feedId = `0x${item.id}`;
+        const feedId = normalizeFeedId(item.id);
         const currentPrice = convertPythPrice(item.price.price, item.price.expo);
 
         if (currentPrice > 0) {
@@ -167,13 +123,10 @@ export async function GET(request: Request) {
   const startTimeParam = searchParams.get('startTime');
 
   try {
-    // Fetch Pyth feed mapping and CFL tokens in parallel
-    const [feedMap, cflTokens] = await Promise.all([
-      getPythFeedMap(),
-      fetchCFLTokens(),
-    ]);
+    // Fetch CFL tokens (they include solanaPythFeedId directly)
+    const cflTokens = await fetchCFLTokens();
 
-    // Build token list with matched Pyth feed IDs
+    // Build token list using solanaPythFeedId from CFL API (like mobile app does)
     const tokensWithFeeds: Array<{
       symbol: string;
       mint: string;
@@ -183,16 +136,16 @@ export async function GET(request: Request) {
     }> = [];
 
     for (const token of cflTokens) {
-      const symbol = token.tokenSymbol.toLowerCase();
-      const feedId = feedMap.get(symbol);
+      // Use solanaPythFeedId directly from CFL API - this is what makes mobile app work
+      const rawFeedId = token.solanaPythFeedId;
 
-      if (feedId) {
+      if (rawFeedId) {
         tokensWithFeeds.push({
           symbol: token.tokenSymbol.toUpperCase(),
-          mint: token.coinGeckoId || symbol,
+          mint: token.coinGeckoId || token.tokenSymbol.toLowerCase(),
           name: token.tokenName,
           boost: token.currentPower || token.lastPower || 80,
-          feedId,
+          feedId: normalizeFeedId(rawFeedId),  // Normalize for consistent matching
         });
       }
     }
