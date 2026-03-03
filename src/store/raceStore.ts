@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { RaceStatus, RacePosition, Token, MatchMode, MomentumSignal, TrackType } from '@/types';
-import { DEFAULT_TOKENS, getTokenColor, getTokensByTrack } from '@/lib/tokens';
+import { getTokenColor, getTokensByTrack } from '@/lib/tokens';
 
 interface PriceUpdate {
   mint: string;
@@ -324,7 +324,5 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
   },
 }));
 
-// Initialize with default tokens
-if (typeof window !== 'undefined') {
-  useRaceStore.getState().initializePositions(DEFAULT_TOKENS);
-}
+// Note: Token initialization is now handled by useRaceData hook
+// which properly awaits loadTokenList() before initializing positions
