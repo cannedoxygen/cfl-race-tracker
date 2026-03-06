@@ -1,4 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+
+// Disable caching for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TldParser } from '@onsol/tldparser';
 import { supabase } from '@/lib/supabase';
@@ -59,10 +63,9 @@ export async function GET() {
     // Get most recent jackpot drawing
     const recentWinner = await getRecentDrawing();
 
-    // Calculate jackpot from tickets (0.01 SOL per ticket), not on-chain balance
-    const JACKPOT_PER_TICKET_LAMPORTS = 10_000_000;
-    const totalTickets = (usersData || []).reduce((sum, u) => sum + u.subscription_count, 0);
-    const jackpotLamports = totalTickets * JACKPOT_PER_TICKET_LAMPORTS;
+    // Use on-chain balance as source of truth (always accurate)
+    // This ensures jackpot reflects all payments, even if verify-payment fails
+    const jackpotLamports = onChainBalance;
 
     // Resolve .skr domain names for top wallets via AllDomains
     const rpcConnection = new Connection(RPC_ENDPOINT, 'confirmed');
@@ -94,6 +97,11 @@ export async function GET() {
       topUsers: usersData || [],
       recentWinner,
       domainNames: domainMap,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+      }
     });
   } catch (error) {
     console.error('Jackpot API error:', error);
