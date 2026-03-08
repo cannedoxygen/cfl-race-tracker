@@ -27,6 +27,7 @@ interface DrawingResult {
   prizeSol?: number;
   txSignature?: string;
   weekId?: string;
+  dbError?: string;
 }
 
 // Get the jackpot wallet keypair from env
@@ -102,8 +103,17 @@ export async function recordDrawing(
   totalTickets: number,
   prizeLamports: number,
   txSignature: string | null
-): Promise<void> {
-  const { error } = await supabase
+): Promise<{ success: boolean; error?: string }> {
+  console.log('Recording jackpot drawing:', {
+    weekId,
+    winnerWallet,
+    winnerTickets,
+    totalTickets,
+    prizeLamports,
+    txSignature,
+  });
+
+  const { data, error } = await supabase
     .from('jackpot_drawings')
     .upsert({
       week_id: weekId,
@@ -114,11 +124,16 @@ export async function recordDrawing(
       prize_sol: prizeLamports / LAMPORTS_PER_SOL,
       tx_signature: txSignature,
       status: txSignature ? 'paid' : 'failed',
-    }, { onConflict: 'week_id' });
+    }, { onConflict: 'week_id' })
+    .select();
 
   if (error) {
-    console.error('Failed to record jackpot drawing:', error);
+    console.error('Failed to record jackpot drawing:', JSON.stringify(error));
+    return { success: false, error: `Supabase error: ${error.message} (code: ${error.code})` };
   }
+
+  console.log('Jackpot drawing recorded successfully:', data);
+  return { success: true };
 }
 
 // Get the most recent jackpot drawing
@@ -200,7 +215,21 @@ export async function performJackpotDraw(): Promise<DrawingResult> {
   }
 
   // Record success
-  await recordDrawing(weekId, winner.wallet_address, winner.subscription_count, totalTickets, payoutAmount, txSignature);
+  const recordResult = await recordDrawing(weekId, winner.wallet_address, winner.subscription_count, totalTickets, payoutAmount, txSignature);
+  if (!recordResult.success) {
+    console.error('Failed to record drawing after successful payout:', recordResult.error);
+    // Still return success since payout went through, but include the error
+    return {
+      success: true,
+      message: `Winner: ${winner.wallet_address} (WARNING: DB record failed: ${recordResult.error})`,
+      winner: winner.wallet_address,
+      prize: payoutAmount,
+      prizeSol: payoutAmount / LAMPORTS_PER_SOL,
+      txSignature,
+      weekId,
+      dbError: recordResult.error,
+    };
+  }
 
   // Reset all ticket counts so next week starts fresh
   const { error: resetError } = await supabase
