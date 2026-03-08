@@ -172,14 +172,7 @@ export async function performJackpotDraw(): Promise<DrawingResult> {
     .gt('subscription_count', 0);
   const totalTickets = allUsers?.reduce((sum, u) => sum + u.subscription_count, 0) ?? 0;
 
-  // Payout = total tickets × 0.01 SOL (only what was earned from entries)
-  const JACKPOT_PER_TICKET_LAMPORTS = 10_000_000; // 0.01 SOL
-  const payoutAmount = totalTickets * JACKPOT_PER_TICKET_LAMPORTS;
-  if (payoutAmount <= 0) {
-    return { success: false, message: 'No tickets to pay out' };
-  }
-
-  // Verify on-chain balance covers the payout
+  // Get on-chain balance - this is the source of truth
   let balance: number;
   try {
     balance = await getJackpotBalance();
@@ -188,8 +181,10 @@ export async function performJackpotDraw(): Promise<DrawingResult> {
     return { success: false, message: 'Failed to get jackpot balance' };
   }
 
-  if (balance < payoutAmount + RENT_BUFFER_LAMPORTS) {
-    return { success: false, message: `Insufficient balance: have ${balance} lamports, need ${payoutAmount + RENT_BUFFER_LAMPORTS}` };
+  // Payout = wallet balance minus rent buffer (pay out everything available)
+  const payoutAmount = balance - RENT_BUFFER_LAMPORTS;
+  if (payoutAmount <= 0) {
+    return { success: false, message: `Insufficient balance: have ${balance} lamports, need more than ${RENT_BUFFER_LAMPORTS}` };
   }
 
   // Send payout
