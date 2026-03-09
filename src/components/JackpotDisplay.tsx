@@ -22,6 +22,7 @@ interface JackpotData {
   totalLamports: number;
   topUsers: TopUser[];
   recentWinner: RecentWinner | null;
+  allWinners: RecentWinner[];
   domainNames: Record<string, string>;
 }
 
@@ -208,49 +209,53 @@ export function JackpotDisplay() {
           )}
         </div>
 
-        {/* Recent Winner */}
-        {data?.recentWinner && (
+        {/* Past Winners */}
+        {data?.allWinners && data.allWinners.length > 0 && (
           <div className="card-pixel p-5">
-            <h2 className="font-pixel text-[10px] text-cfl-gold mb-4">RECENT WINNER</h2>
-            <div className="p-4 rounded-lg bg-cfl-gold/10 border border-cfl-gold/30">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-pixel text-[10px] bg-cfl-gold/20 text-cfl-gold">
-                    🏆
-                  </span>
-                  <div>
-                    <div className="font-pixel-body text-lg text-white">
-                      {displayName(data.recentWinner.winnerWallet)}
+            <h2 className="font-pixel text-[10px] text-cfl-gold mb-4">PAST WINNERS</h2>
+            <div className="space-y-3">
+              {data.allWinners.map((winner, index) => (
+                <div key={winner.weekId} className="p-4 rounded-lg bg-cfl-gold/10 border border-cfl-gold/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-pixel text-[10px] bg-cfl-gold/20 text-cfl-gold">
+                        {index === 0 ? '🏆' : '🥇'}
+                      </span>
+                      <div>
+                        <div className="font-pixel-body text-lg text-white">
+                          {displayName(winner.winnerWallet)}
+                        </div>
+                        <div className="font-pixel text-[7px] text-cfl-gold">
+                          {winner.weekId} WINNER
+                        </div>
+                      </div>
                     </div>
-                    <div className="font-pixel text-[7px] text-cfl-gold">
-                      WINNER
+                    <div className="text-right">
+                      <div className="font-pixel text-sm text-cfl-gold">
+                        {winner.prizeSol.toFixed(4)} SOL
+                      </div>
+                      <div className="font-pixel-body text-sm text-cfl-text-muted">
+                        {new Date(winner.drawnAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
                     </div>
                   </div>
+                  {winner.txSignature && (
+                    <a
+                      href={`https://solscan.io/tx/${winner.txSignature}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-center font-pixel text-[8px] text-cfl-teal hover:text-cfl-green transition-colors underline"
+                    >
+                      VIEW TRANSACTION ON SOLSCAN →
+                    </a>
+                  )}
+                  {winner.status === 'failed' && (
+                    <div className="text-center font-pixel text-[8px] text-cfl-orange mt-1">
+                      PAYOUT PENDING
+                    </div>
+                  )}
                 </div>
-                <div className="text-right">
-                  <div className="font-pixel text-sm text-cfl-gold">
-                    {data.recentWinner.prizeSol.toFixed(4)} SOL
-                  </div>
-                  <div className="font-pixel-body text-sm text-cfl-text-muted">
-                    Week of {new Date(data.recentWinner.drawnAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </div>
-                </div>
-              </div>
-              {data.recentWinner.txSignature && (
-                <a
-                  href={`https://solscan.io/tx/${data.recentWinner.txSignature}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-center font-pixel text-[8px] text-cfl-teal hover:text-cfl-green transition-colors underline"
-                >
-                  VIEW TRANSACTION ON SOLSCAN →
-                </a>
-              )}
-              {data.recentWinner.status === 'failed' && (
-                <div className="text-center font-pixel text-[8px] text-cfl-orange mt-1">
-                  PAYOUT PENDING
-                </div>
-              )}
+              ))}
             </div>
           </div>
         )}
