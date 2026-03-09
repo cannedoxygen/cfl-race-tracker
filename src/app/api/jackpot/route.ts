@@ -35,25 +35,8 @@ export async function GET() {
       console.error('Failed to fetch users:', usersError);
     }
 
-    // Also get all subscriptions for user calculations if users table is empty
-    const { data: subsData } = await supabase
-      .from('subscriptions')
-      .select('wallet_address, amount_lamports');
-
-    // If users table is empty but we have subscriptions, compute from subscriptions
-    if ((!usersData || usersData.length === 0) && subsData && subsData.length > 0) {
-      const userCounts: Record<string, number> = {};
-      for (const sub of subsData) {
-        userCounts[sub.wallet_address] = (userCounts[sub.wallet_address] || 0) + 1;
-      }
-      usersData = Object.entries(userCounts)
-        .map(([wallet_address, subscription_count]) => ({
-          wallet_address,
-          subscription_count,
-        }))
-        .sort((a, b) => b.subscription_count - a.subscription_count)
-        .slice(0, 10);
-    }
+    // Note: After a jackpot drawing, user tickets reset to 0
+    // We only show users with actual current tickets, not historical subscriptions
 
     console.log('Jackpot API response:', {
       onChainBalance,
