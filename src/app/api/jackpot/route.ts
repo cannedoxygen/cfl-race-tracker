@@ -6,7 +6,7 @@ export const revalidate = 0;
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TldParser } from '@onsol/tldparser';
 import { supabase } from '@/lib/supabase';
-import { getRecentDrawing } from '@/lib/jackpot';
+import { getRecentDrawing, getAllDrawings } from '@/lib/jackpot';
 
 const JACKPOT_WALLET = '8BitDWkraozroK1yfVf2pW3T2kkCrzRVA9rEh5gL8f3m';
 const RPC_ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
@@ -60,19 +60,23 @@ export async function GET() {
       usersCount: usersData?.length
     });
 
-    // Get most recent jackpot drawing
+    // Get jackpot drawings (most recent and all history)
     const recentWinner = await getRecentDrawing();
+    const allWinners = await getAllDrawings();
 
     // Use on-chain balance as source of truth (always accurate)
     // This ensures jackpot reflects all payments, even if verify-payment fails
     const jackpotLamports = onChainBalance;
 
-    // Resolve .skr domain names for top wallets via AllDomains
+    // Resolve .skr domain names for top wallets and all winners via AllDomains
     const rpcConnection = new Connection(RPC_ENDPOINT, 'confirmed');
     const parser = new TldParser(rpcConnection);
     const allWallets = (usersData || []).slice(0, 20).map(u => u.wallet_address);
-    if (recentWinner && !allWallets.includes(recentWinner.winnerWallet)) {
-      allWallets.push(recentWinner.winnerWallet);
+    // Add all winner wallets to domain resolution
+    for (const winner of allWinners) {
+      if (!allWallets.includes(winner.winnerWallet)) {
+        allWallets.push(winner.winnerWallet);
+      }
     }
 
     const domainMap: Record<string, string> = {};
@@ -96,6 +100,7 @@ export async function GET() {
       totalLamports: jackpotLamports,
       topUsers: usersData || [],
       recentWinner,
+      allWinners,
       domainNames: domainMap,
     }, {
       headers: {

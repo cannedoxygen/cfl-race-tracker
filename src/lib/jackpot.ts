@@ -113,9 +113,11 @@ export async function recordDrawing(
     txSignature,
   });
 
+  // Use insert instead of upsert - we already check for existing drawings in performJackpotDraw
+  // upsert with onConflict requires a unique constraint which may not exist
   const { data, error } = await supabase
     .from('jackpot_drawings')
-    .upsert({
+    .insert({
       week_id: weekId,
       winner_wallet: winnerWallet,
       winner_tickets: winnerTickets,
@@ -124,7 +126,7 @@ export async function recordDrawing(
       prize_sol: prizeLamports / LAMPORTS_PER_SOL,
       tx_signature: txSignature,
       status: txSignature ? 'paid' : 'failed',
-    }, { onConflict: 'week_id' })
+    })
     .select();
 
   if (error) {
@@ -157,6 +159,27 @@ export async function getRecentDrawing() {
     status: data.status,
     drawnAt: data.created_at,
   };
+}
+
+// Get all jackpot drawings (history)
+export async function getAllDrawings() {
+  const { data, error } = await supabase
+    .from('jackpot_drawings')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map(row => ({
+    weekId: row.week_id,
+    winnerWallet: row.winner_wallet,
+    winnerTickets: row.winner_tickets,
+    totalTickets: row.total_tickets,
+    prizeSol: Number(row.prize_sol),
+    txSignature: row.tx_signature,
+    status: row.status,
+    drawnAt: row.created_at,
+  }));
 }
 
 // Full draw + payout flow
