@@ -52,6 +52,9 @@ function convertCFLToken(apiToken: CFLApiToken): Token {
   };
 }
 
+// Tokens to exclude from the game (low volume, manipulated, etc.)
+const EXCLUDED_TOKENS = ['SATS'];
+
 // Token storage - always fetches from API, no static fallback
 // Using a single array that we mutate to keep all references in sync
 const tokenCache: Token[] = [];
@@ -92,7 +95,9 @@ export async function refreshTokens(force = false): Promise<Token[]> {
       const data = await response.json();
 
       if (data.success && Array.isArray(data.data)) {
-        const newTokens = data.data.map(convertCFLToken);
+        const newTokens = data.data
+          .map(convertCFLToken)
+          .filter((token: Token) => !EXCLUDED_TOKENS.includes(token.symbol.toUpperCase()));
 
         // Mutate the array to keep all references in sync
         tokenCache.length = 0;
