@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const CFL_TOKEN_API = 'https://v12-cfl-backend-production.up.railway.app/token/list?page=1&limit=500';
 
-// Cache tokens in memory with TTL
+// Tokens to exclude from the game (low volume, erratic behavior, etc.)
+const EXCLUDED_TOKENS = ['SATS'];
+
+// Cache tokens in memory with short TTL to pick up new tokens quickly
 let cachedTokens: any[] | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 60 * 1000; // 1 minute - short to pick up new tokens faster
 
 async function fetchTokensFromAPI(): Promise<any[]> {
   const now = Date.now();
@@ -51,7 +55,12 @@ async function fetchTokensFromAPI(): Promise<any[]> {
 
 export async function GET() {
   try {
-    const tokens = await fetchTokensFromAPI();
+    const allTokens = await fetchTokensFromAPI();
+
+    // Filter out excluded tokens
+    const tokens = allTokens.filter(
+      (token: any) => !EXCLUDED_TOKENS.includes(token.tokenSymbol?.toUpperCase())
+    );
 
     return NextResponse.json({
       success: true,
@@ -59,25 +68,17 @@ export async function GET() {
       count: tokens.length,
       cached: (Date.now() - cacheTimestamp) > 1000, // Was this from cache?
       timestamp: Date.now(),
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+      }
     });
   } catch (error) {
     console.error('[Tokens API] Error:', error);
-
-    // Try to load from static file as last resort
-    try {
-      const staticTokens = await import('@/data/tokens.json');
-      return NextResponse.json({
-        success: true,
-        data: staticTokens.data,
-        count: staticTokens.data.length,
-        fallback: true,
-        timestamp: Date.now(),
-      });
-    } catch {
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch tokens', data: [] },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch tokens', data: [] },
+      { status: 500 }
+    );
   }
 }
