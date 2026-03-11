@@ -11,38 +11,38 @@ interface Props {
   onSelectToken: (mint: string | null) => void;
 }
 
-interface BounceData {
+interface ReversalData {
   mint: string;
   symbol: string;
   logoURI: string;
   color: string;
-  bounceStrength: number;
-  lowPoint: number;
+  reversalStrength: number;
+  peakPoint: number; // The highest point it hit
   currentChange: number;
-  addedAt: number; // When this bounce was detected
+  addedAt: number;
 }
 
 interface TokenHistory {
   changes: number[];
-  recentLow: number;
-  recentLowTime: number;
+  recentHigh: number;
+  recentHighTime: number;
 }
 
 const WINDOW_SIZE = 60; // ~2 minutes of history at 2s updates
-const BOUNCE_EXPIRE_MS = 300000; // Bounces expire after 5 minutes
+const REVERSAL_EXPIRE_MS = 300000; // Reversals expire after 5 minutes
 
-export function BounceAlert({ positions, selectedToken, onSelectToken }: Props) {
-  const [bounces, setBounces] = useState<BounceData[]>([]);
+export function ReversalRisk({ positions, selectedToken, onSelectToken }: Props) {
+  const [reversals, setReversals] = useState<ReversalData[]>([]);
   const [showInfo, setShowInfo] = useState(false);
   const historyRef = useRef<Map<string, TokenHistory>>(new Map());
-  const activeBounces = useRef<Map<string, BounceData>>(new Map());
+  const activeReversals = useRef<Map<string, ReversalData>>(new Map());
 
   useEffect(() => {
     if (positions.length === 0) return;
 
     const now = Date.now();
 
-    // Update history and track lows
+    // Update history and track highs
     positions.forEach(pos => {
       const existing = historyRef.current.get(pos.mint);
       const currentChange = pos.position;
@@ -53,116 +53,120 @@ export function BounceAlert({ positions, selectedToken, onSelectToken }: Props) 
           newChanges.shift();
         }
 
-        // Update recent low if we hit a new low
-        let recentLow = existing.recentLow;
-        let recentLowTime = existing.recentLowTime;
+        // Update recent high if we hit a new high
+        let recentHigh = existing.recentHigh;
+        let recentHighTime = existing.recentHighTime;
 
-        if (currentChange < recentLow) {
-          recentLow = currentChange;
-          recentLowTime = now;
+        if (currentChange > recentHigh) {
+          recentHigh = currentChange;
+          recentHighTime = now;
         }
 
-        // Decay the low over time (forget old lows after 3 minutes)
-        if (now - recentLowTime > 180000) {
-          recentLow = Math.min(...newChanges);
-          recentLowTime = now;
+        // Decay the high over time (forget old highs after 3 minutes)
+        if (now - recentHighTime > 180000) {
+          recentHigh = Math.max(...newChanges);
+          recentHighTime = now;
         }
 
         historyRef.current.set(pos.mint, {
           changes: newChanges,
-          recentLow,
-          recentLowTime,
+          recentHigh,
+          recentHighTime,
         });
       } else {
         historyRef.current.set(pos.mint, {
           changes: [currentChange],
-          recentLow: currentChange,
-          recentLowTime: now,
+          recentHigh: currentChange,
+          recentHighTime: now,
         });
       }
     });
 
-    // Find new bouncing tokens
+    // Find tokens showing reversal signs
     positions.forEach(pos => {
       const history = historyRef.current.get(pos.mint);
       if (!history || history.changes.length < 5) return;
 
       const currentChange = pos.position;
-      const recentLow = history.recentLow;
+      const recentHigh = history.recentHigh;
       const changes = history.changes;
 
-      // Check if this is a bounce candidate:
-      // 1. Had a significant dip (went below -0.2%)
-      // 2. Current is above the low
-      // 3. Has upward momentum
-      if (recentLow >= -0.2) return;
-      if (currentChange <= recentLow) return;
+      // Check if this is a reversal candidate:
+      // 1. Had a significant pump (went above +0.3%)
+      // 2. Current is below the high (pulling back)
+      // 3. Has downward momentum (weakening)
+      if (recentHigh <= 0.3) return;
+      if (currentChange >= recentHigh) return;
 
-      // Calculate recovery amount
-      const recovery = currentChange - recentLow;
+      // Calculate pullback amount
+      const pullback = recentHigh - currentChange;
+
+      // Need at least 0.1% pullback to be considered
+      if (pullback < 0.1) return;
 
       // Check recent momentum (last 5 points)
       const recentChanges = changes.slice(-5);
       if (recentChanges.length < 3) return;
       const recentVelocity = recentChanges[recentChanges.length - 1] - recentChanges[0];
 
-      // Need positive momentum to be a bounce
-      if (recentVelocity <= 0) return;
+      // Need negative or flat momentum to be a reversal candidate
+      if (recentVelocity > 0.05) return;
 
-      // Bounce strength = recovery * momentum
-      const bounceStrength = recovery * (1 + recentVelocity);
+      // Reversal strength = pullback amount * how far from peak
+      const distanceFromPeak = (recentHigh - currentChange) / recentHigh;
+      const reversalStrength = pullback * (1 + distanceFromPeak) * (1 - recentVelocity);
 
-      const existingBounce = activeBounces.current.get(pos.mint);
+      const existingReversal = activeReversals.current.get(pos.mint);
 
-      // Add or update bounce
-      activeBounces.current.set(pos.mint, {
+      // Add or update reversal
+      activeReversals.current.set(pos.mint, {
         mint: pos.mint,
         symbol: pos.symbol,
         logoURI: pos.logoURI,
         color: pos.color,
-        bounceStrength,
-        lowPoint: recentLow,
+        reversalStrength,
+        peakPoint: recentHigh,
         currentChange,
-        addedAt: existingBounce?.addedAt || now,
+        addedAt: existingReversal?.addedAt || now,
       });
     });
 
-    // Update current change for all active bounces
-    activeBounces.current.forEach((bounce, mint) => {
+    // Update current change for all active reversals
+    activeReversals.current.forEach((reversal, mint) => {
       const pos = positions.find(p => p.mint === mint);
       if (pos) {
-        bounce.currentChange = pos.position;
+        reversal.currentChange = pos.position;
       }
     });
 
-    // Remove expired bounces or those that have gone negative again
-    activeBounces.current.forEach((bounce, mint) => {
+    // Remove expired reversals or those that have pumped back above their peak
+    activeReversals.current.forEach((reversal, mint) => {
       const pos = positions.find(p => p.mint === mint);
-      const expired = now - bounce.addedAt > BOUNCE_EXPIRE_MS;
-      const goneNegativeAgain = pos && pos.position < bounce.lowPoint;
+      const expired = now - reversal.addedAt > REVERSAL_EXPIRE_MS;
+      const pumpedBack = pos && pos.position >= reversal.peakPoint;
 
-      if (expired || goneNegativeAgain) {
-        activeBounces.current.delete(mint);
+      if (expired || pumpedBack) {
+        activeReversals.current.delete(mint);
       }
     });
 
-    // Sort by bounce strength and take top 5
-    const sortedBounces = Array.from(activeBounces.current.values())
-      .sort((a, b) => b.bounceStrength - a.bounceStrength)
+    // Sort by reversal strength and take top 5
+    const sortedReversals = Array.from(activeReversals.current.values())
+      .sort((a, b) => b.reversalStrength - a.reversalStrength)
       .slice(0, 5);
 
     // Keep only top 5 in the active map
-    const top5Mints = new Set(sortedBounces.map(b => b.mint));
-    activeBounces.current.forEach((_, mint) => {
+    const top5Mints = new Set(sortedReversals.map(r => r.mint));
+    activeReversals.current.forEach((_, mint) => {
       if (!top5Mints.has(mint)) {
-        activeBounces.current.delete(mint);
+        activeReversals.current.delete(mint);
       }
     });
 
-    setBounces(sortedBounces);
+    setReversals(sortedReversals);
   }, [positions]);
 
-  if (bounces.length === 0) {
+  if (reversals.length === 0) {
     return (
       <div className="flex flex-col h-full relative">
         <button
@@ -170,23 +174,23 @@ export function BounceAlert({ positions, selectedToken, onSelectToken }: Props) 
           className="flex items-center justify-between mb-2 w-full hover:opacity-80 transition-opacity"
         >
           <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
-            <span className="text-cfl-orange">↩</span> BOUNCE ALERT
+            <span className="text-cfl-red">⚠</span> REVERSAL RISK
             <span className="text-cfl-text-muted text-[6px]">ⓘ</span>
           </h2>
           <span className="font-pixel text-[6px] text-cfl-text-muted">5 min</span>
         </button>
 
         <div className="flex-1 flex items-center justify-center text-cfl-text-muted relative">
-          <p className="font-pixel text-[8px]">NO BOUNCES</p>
+          <p className="font-pixel text-[8px]">NO REVERSALS</p>
 
           {showInfo && (
-            <div className="absolute bottom-0 left-0 right-0 bg-cfl-card border-2 border-cfl-orange rounded-lg p-2 shadow-lg animate-slideFromBottom z-10">
+            <div className="absolute bottom-0 left-0 right-0 bg-cfl-card border-2 border-cfl-red rounded-lg p-2 shadow-lg animate-slideFromBottom z-10">
               <p className="font-pixel-body text-[10px] text-cfl-text-muted leading-relaxed">
-                Tokens that dipped negative and are now recovering. Shows the low point hit and current position. Strong bounces often continue into the race.
+                Tokens that pumped high and are now pulling back. Shows peak hit and current position. Good SHORT candidates for the next race.
               </p>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowInfo(false); }}
-                className="font-pixel text-[6px] text-cfl-orange mt-1 hover:underline"
+                className="font-pixel text-[6px] text-cfl-red mt-1 hover:underline"
               >
                 GOT IT
               </button>
@@ -204,14 +208,14 @@ export function BounceAlert({ positions, selectedToken, onSelectToken }: Props) 
         className="flex items-center justify-between mb-2 w-full hover:opacity-80 transition-opacity"
       >
         <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
-          <span className="text-cfl-orange">↩</span> BOUNCE ALERT
+          <span className="text-cfl-red">⚠</span> REVERSAL RISK
           <span className="text-cfl-text-muted text-[6px]">ⓘ</span>
         </h2>
         <span className="font-pixel text-[6px] text-cfl-text-muted">5 min</span>
       </button>
 
       <div className="flex-1 flex flex-col gap-1 overflow-hidden relative">
-        {bounces.map((token, index) => {
+        {reversals.map((token, index) => {
           const isSelected = selectedToken === token.mint;
 
           return (
@@ -221,14 +225,14 @@ export function BounceAlert({ positions, selectedToken, onSelectToken }: Props) 
               className={clsx(
                 'flex items-center gap-2 px-2 py-1 rounded transition-all',
                 'border bg-cfl-bg/50 hover:bg-cfl-border/30',
-                index === 0 ? 'border-cfl-orange/50' : 'border-cfl-border/50',
+                index === 0 ? 'border-cfl-red/50' : 'border-cfl-border/50',
                 isSelected && 'ring-1 ring-cfl-pink'
               )}
             >
               {/* Rank */}
               <span className={clsx(
                 'font-pixel text-[8px] w-4',
-                index === 0 ? 'text-cfl-orange' : 'text-cfl-text-muted'
+                index === 0 ? 'text-cfl-red' : 'text-cfl-text-muted'
               )}>
                 {index + 1}
               </span>
@@ -259,9 +263,9 @@ export function BounceAlert({ positions, selectedToken, onSelectToken }: Props) 
                 {token.symbol}
               </span>
 
-              {/* Low point */}
-              <span className="font-pixel text-[6px] text-cfl-red">
-                ↓{token.lowPoint.toFixed(2)}%
+              {/* Peak point */}
+              <span className="font-pixel text-[6px] text-cfl-green">
+                ↑{token.peakPoint.toFixed(2)}%
               </span>
 
               {/* Current change */}
@@ -276,13 +280,13 @@ export function BounceAlert({ positions, selectedToken, onSelectToken }: Props) 
         })}
 
         {showInfo && (
-          <div className="absolute bottom-0 left-0 right-0 bg-cfl-card border-2 border-cfl-orange rounded-lg p-2 shadow-lg animate-slideFromBottom z-10">
+          <div className="absolute bottom-0 left-0 right-0 bg-cfl-card border-2 border-cfl-red rounded-lg p-2 shadow-lg animate-slideFromBottom z-10">
             <p className="font-pixel-body text-[10px] text-cfl-text-muted leading-relaxed">
-              Tokens that dipped negative and are now recovering. Shows the low point hit and current position. Strong bounces often continue into the race.
+              Tokens that pumped high and are now pulling back. Shows peak hit and current position. Good SHORT candidates for the next race.
             </p>
             <button
               onClick={(e) => { e.stopPropagation(); setShowInfo(false); }}
-              className="font-pixel text-[6px] text-cfl-orange mt-1 hover:underline"
+              className="font-pixel text-[6px] text-cfl-red mt-1 hover:underline"
             >
               GOT IT
             </button>

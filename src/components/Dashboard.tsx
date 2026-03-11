@@ -9,6 +9,7 @@ import { TopMovers } from './TopMovers';
 import { SmartMovers } from './SmartMovers';
 import { PreRaceVelocity } from './PreRaceVelocity';
 import { BounceAlert } from './BounceAlert';
+import { ReversalRisk } from './ReversalRisk';
 import { TokenStatsCard } from './TokenStatsCard';
 import { useRaceData } from '@/hooks/useRaceData';
 
@@ -185,6 +186,15 @@ export function Dashboard() {
               />
             </div>
 
+            {/* Reversal Risk - tokens that pumped and may drop */}
+            <div className="w-[220px] card-pixel p-2 overflow-hidden">
+              <ReversalRisk
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+              />
+            </div>
+
             {/* Hourly Top Movers */}
             <div className="w-[260px] card-pixel p-2 overflow-hidden">
               <TopMovers
@@ -227,6 +237,13 @@ export function Dashboard() {
             </div>
             <div className="min-h-[150px] card-pixel p-3">
               <BounceAlert
+                positions={positions}
+                selectedToken={selectedToken}
+                onSelectToken={setSelectedToken}
+              />
+            </div>
+            <div className="min-h-[150px] card-pixel p-3">
+              <ReversalRisk
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
