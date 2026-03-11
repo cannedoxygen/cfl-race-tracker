@@ -49,6 +49,9 @@ const INFO_DETAILS: Record<MetricType, string> = {
   trending: 'Tokens moving consistently in one direction over 5 minutes. Less choppy, more predictable.',
 };
 
+// Decay rate: score reduces by this much per second of inactivity
+const DECAY_RATE = 0.02; // 2% per second
+
 export function SmartMovers({ positions, selectedToken, onSelectToken, metric }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
   const [showInfo, setShowInfo] = useState(false);
@@ -142,6 +145,11 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
           }
           break;
       }
+
+      // Apply time decay - reduce score for tokens that haven't updated recently
+      const timeSinceUpdate = now - history.lastUpdate;
+      const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
+      score *= decayFactor;
 
       return { pos, score };
     });

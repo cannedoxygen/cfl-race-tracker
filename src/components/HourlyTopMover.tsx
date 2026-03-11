@@ -16,14 +16,23 @@ interface HourlyMoverData {
   symbol: string;
   logoURI: string;
   color: string;
-  accumulatedVolatility: number;
-  peakChange: number;
+  score: number;
+  change: number;
   direction: 'long' | 'short';
 }
 
+interface TokenHistory {
+  changes: number[];
+  lastUpdate: number;
+}
+
+// Decay factor: score reduces by this much per second of inactivity
+const DECAY_RATE = 0.02; // 2% per second
+const MAX_HISTORY = 150; // Keep last 150 data points
+
 export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Props) {
   const [topMovers, setTopMovers] = useState<HourlyMoverData[]>([]);
-  const volatilityAccumulator = useRef<Map<string, { volatility: number; peakChange: number; lastUpdate: number }>>(new Map());
+  const historyRef = useRef<Map<string, TokenHistory>>(new Map());
   const hourStartTime = useRef<number>(Date.now());
 
   // Reset hourly tracking every hour
@@ -33,7 +42,7 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
       const hourElapsed = now - hourStartTime.current >= 3600000;
 
       if (hourElapsed) {
-        volatilityAccumulator.current.clear();
+        historyRef.current.clear();
         hourStartTime.current = now;
       }
     };
@@ -42,55 +51,85 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
     return () => clearInterval(interval);
   }, []);
 
-  // Accumulate volatility data
+  // Calculate volatility score with decay
   useEffect(() => {
     if (positions.length === 0) return;
 
     const now = Date.now();
 
+    // Update history for each position
     positions.forEach(pos => {
-      const existing = volatilityAccumulator.current.get(pos.mint);
-      const absChange = Math.abs(pos.position);
+      const existing = historyRef.current.get(pos.mint);
+      const currentChange = pos.position;
 
       if (existing) {
-        volatilityAccumulator.current.set(pos.mint, {
-          volatility: existing.volatility + absChange * 0.1,
-          peakChange: Math.max(existing.peakChange, absChange),
+        const newChanges = [...existing.changes, currentChange];
+        if (newChanges.length > MAX_HISTORY) {
+          newChanges.shift();
+        }
+        historyRef.current.set(pos.mint, {
+          changes: newChanges,
           lastUpdate: now,
         });
       } else {
-        volatilityAccumulator.current.set(pos.mint, {
-          volatility: absChange,
-          peakChange: absChange,
+        historyRef.current.set(pos.mint, {
+          changes: [currentChange],
           lastUpdate: now,
         });
       }
     });
 
-    // Find top 3 movers
-    const sortedMovers: { mint: string; volatility: number }[] = [];
-    volatilityAccumulator.current.forEach((data, mint) => {
-      sortedMovers.push({ mint, volatility: data.volatility });
-    });
-    sortedMovers.sort((a, b) => b.volatility - a.volatility);
-
-    const top3 = sortedMovers.slice(0, 3).map(({ mint }) => {
-      const pos = positions.find(p => p.mint === mint);
-      const accData = volatilityAccumulator.current.get(mint);
-
-      if (pos && accData) {
-        return {
-          mint: pos.mint,
-          symbol: pos.symbol,
-          logoURI: pos.logoURI,
-          color: pos.color,
-          accumulatedVolatility: accData.volatility,
-          peakChange: accData.peakChange,
-          direction: pos.position >= 0 ? 'long' : 'short',
-        } as HourlyMoverData;
+    // Score each token based on recent volatility with decay
+    const scored = positions.map(pos => {
+      const history = historyRef.current.get(pos.mint);
+      if (!history || history.changes.length < 3) {
+        return { pos, score: 0 };
       }
-      return null;
-    }).filter((m): m is HourlyMoverData => m !== null);
+
+      const changes = history.changes;
+
+      // Calculate volatility: sum of absolute differences (how much it's swinging)
+      let volatilityScore = 0;
+      for (let i = 1; i < changes.length; i++) {
+        volatilityScore += Math.abs(changes[i] - changes[i - 1]);
+      }
+
+      // Weight recent changes more heavily
+      const recentChanges = changes.slice(-10);
+      let recentVolatility = 0;
+      for (let i = 1; i < recentChanges.length; i++) {
+        recentVolatility += Math.abs(recentChanges[i] - recentChanges[i - 1]);
+      }
+
+      // Combine overall + recent (recent weighted 2x)
+      let score = volatilityScore + (recentVolatility * 2);
+
+      // Apply time decay - reduce score for tokens that haven't updated recently
+      const timeSinceUpdate = now - history.lastUpdate;
+      const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
+      score *= decayFactor;
+
+      return { pos, score };
+    });
+
+    // Sort by score and take top 3
+    scored.sort((a, b) => b.score - a.score);
+
+    const top3 = scored.slice(0, 3).map(({ pos, score }) => {
+      const history = historyRef.current.get(pos.mint);
+      const changes = history?.changes || [];
+      const currentChange = changes.length > 0 ? changes[changes.length - 1] : pos.position;
+
+      return {
+        mint: pos.mint,
+        symbol: pos.symbol,
+        logoURI: pos.logoURI,
+        color: pos.color,
+        score,
+        change: currentChange,
+        direction: currentChange >= 0 ? 'long' : 'short',
+      } as HourlyMoverData;
+    });
 
     setTopMovers(top3);
   }, [positions]);
@@ -205,9 +244,12 @@ export function HourlyTopMover({ positions, selectedToken, onSelectToken }: Prop
                 {mover.direction === 'long' ? 'LONG' : 'SHORT'}
               </span>
 
-              {/* Peak % */}
-              <span className="font-pixel text-[8px] text-cfl-gold mt-0.5">
-                {mover.peakChange.toFixed(2)}%
+              {/* Current % */}
+              <span className={clsx(
+                'font-pixel text-[8px] mt-0.5',
+                mover.change >= 0 ? 'text-cfl-green' : 'text-cfl-red'
+              )}>
+                {mover.change >= 0 ? '+' : ''}{mover.change.toFixed(2)}%
               </span>
             </button>
           );
