@@ -18,15 +18,25 @@ interface MoverData {
   symbol: string;
   logoURI: string;
   color: string;
-  accumulatedVolatility: number;
+  score: number;
   peakChange: number;
   currentChange: number; // Rolling 60s change (like leaderboard)
   direction: 'long' | 'short';
 }
 
+interface TokenHistory {
+  changes: number[];
+  peakChange: number;
+  lastUpdate: number;
+}
+
+// Decay rate: score reduces by this much per second of inactivity
+const DECAY_RATE = 0.02; // 2% per second
+const MAX_HISTORY = 150;
+
 export function TopMovers({ positions, selectedToken, onSelectToken, intervalMinutes, topCount }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
-  const volatilityAccumulator = useRef<Map<string, { volatility: number; peakChange: number; lastUpdate: number }>>(new Map());
+  const historyRef = useRef<Map<string, TokenHistory>>(new Map());
   const intervalStartTime = useRef<number>(Date.now());
   const intervalMs = intervalMinutes * 60 * 1000;
 
@@ -37,7 +47,7 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
       const elapsed = now - intervalStartTime.current >= intervalMs;
 
       if (elapsed) {
-        volatilityAccumulator.current.clear();
+        historyRef.current.clear();
         intervalStartTime.current = now;
       }
     };
@@ -46,56 +56,89 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
     return () => clearInterval(interval);
   }, [intervalMs]);
 
-  // Accumulate volatility data
+  // Track history and calculate scores with decay
   useEffect(() => {
     if (positions.length === 0) return;
 
     const now = Date.now();
 
+    // Update history for each position
     positions.forEach(pos => {
-      const existing = volatilityAccumulator.current.get(pos.mint);
-      const absChange = Math.abs(pos.position);
+      const existing = historyRef.current.get(pos.mint);
+      const currentChange = pos.position;
+      const absChange = Math.abs(currentChange);
 
       if (existing) {
-        volatilityAccumulator.current.set(pos.mint, {
-          volatility: existing.volatility + absChange * 0.1,
-          peakChange: Math.max(existing.peakChange, absChange),
+        const newChanges = [...existing.changes, currentChange];
+        if (newChanges.length > MAX_HISTORY) {
+          newChanges.shift();
+        }
+
+        // Apply decay to peakChange, then update with new value if higher
+        const timeSinceUpdate = now - existing.lastUpdate;
+        const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
+        const decayedPeak = existing.peakChange * decayFactor;
+
+        historyRef.current.set(pos.mint, {
+          changes: newChanges,
+          peakChange: Math.max(decayedPeak, absChange),
           lastUpdate: now,
         });
       } else {
-        volatilityAccumulator.current.set(pos.mint, {
-          volatility: absChange,
+        historyRef.current.set(pos.mint, {
+          changes: [currentChange],
           peakChange: absChange,
           lastUpdate: now,
         });
       }
     });
 
-    // Find top movers
-    const sortedMovers: { mint: string; volatility: number }[] = [];
-    volatilityAccumulator.current.forEach((data, mint) => {
-      sortedMovers.push({ mint, volatility: data.volatility });
-    });
-    sortedMovers.sort((a, b) => b.volatility - a.volatility);
-
-    const topN = sortedMovers.slice(0, topCount).map(({ mint }) => {
-      const pos = positions.find(p => p.mint === mint);
-      const accData = volatilityAccumulator.current.get(mint);
-
-      if (pos && accData) {
-        return {
-          mint: pos.mint,
-          symbol: pos.symbol,
-          logoURI: pos.logoURI,
-          color: pos.color,
-          accumulatedVolatility: accData.volatility,
-          peakChange: accData.peakChange,
-          currentChange: pos.position, // Rolling 60s change
-          direction: pos.position >= 0 ? 'long' : 'short',
-        } as MoverData;
+    // Calculate volatility score for each token
+    const scored = positions.map(pos => {
+      const history = historyRef.current.get(pos.mint);
+      if (!history || history.changes.length < 3) {
+        return { pos, score: 0, peakChange: 0 };
       }
-      return null;
-    }).filter((m): m is MoverData => m !== null);
+
+      const changes = history.changes;
+
+      // Calculate volatility: sum of absolute differences
+      let volatilityScore = 0;
+      for (let i = 1; i < changes.length; i++) {
+        volatilityScore += Math.abs(changes[i] - changes[i - 1]);
+      }
+
+      // Weight recent changes more heavily
+      const recentChanges = changes.slice(-10);
+      let recentVolatility = 0;
+      for (let i = 1; i < recentChanges.length; i++) {
+        recentVolatility += Math.abs(recentChanges[i] - recentChanges[i - 1]);
+      }
+
+      // Combine overall + recent (recent weighted 2x)
+      let score = volatilityScore + (recentVolatility * 2);
+
+      // Apply time decay to score
+      const timeSinceUpdate = now - history.lastUpdate;
+      const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
+      score *= decayFactor;
+
+      return { pos, score, peakChange: history.peakChange };
+    });
+
+    // Sort by score and take top N
+    scored.sort((a, b) => b.score - a.score);
+
+    const topN = scored.slice(0, topCount).map(({ pos, score, peakChange }) => ({
+      mint: pos.mint,
+      symbol: pos.symbol,
+      logoURI: pos.logoURI,
+      color: pos.color,
+      score,
+      peakChange,
+      currentChange: pos.position,
+      direction: pos.position >= 0 ? 'long' : 'short',
+    } as MoverData));
 
     setTopMovers(topN);
   }, [positions, topCount]);
