@@ -7,6 +7,8 @@ import { RaceLeaderboard } from './RaceLeaderboard';
 import { AlertPanel } from './AlertPanel';
 import { TopMovers } from './TopMovers';
 import { SmartMovers } from './SmartMovers';
+import { PreRaceVelocity } from './PreRaceVelocity';
+import { BounceAlert } from './BounceAlert';
 import { TokenStatsCard } from './TokenStatsCard';
 import { useRaceData } from '@/hooks/useRaceData';
 
@@ -165,33 +167,21 @@ export function Dashboard() {
               />
             </div>
 
-            {/* Momentum */}
+            {/* Pre-Race Velocity - what's moving fastest right now */}
             <div className="w-[220px] card-pixel p-2 overflow-hidden">
-              <SmartMovers
+              <PreRaceVelocity
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                metric="momentum"
               />
             </div>
 
-            {/* Volatile */}
+            {/* Bounce Alert - tokens recovering from dips */}
             <div className="w-[220px] card-pixel p-2 overflow-hidden">
-              <SmartMovers
+              <BounceAlert
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                metric="volatile"
-              />
-            </div>
-
-            {/* Trending */}
-            <div className="w-[220px] card-pixel p-2 overflow-hidden">
-              <SmartMovers
-                positions={positions}
-                selectedToken={selectedToken}
-                onSelectToken={setSelectedToken}
-                metric="trending"
               />
             </div>
 
@@ -229,27 +219,17 @@ export function Dashboard() {
               />
             </div>
             <div className="min-h-[150px] card-pixel p-3">
-              <SmartMovers
+              <PreRaceVelocity
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                metric="momentum"
               />
             </div>
             <div className="min-h-[150px] card-pixel p-3">
-              <SmartMovers
+              <BounceAlert
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
-                metric="volatile"
-              />
-            </div>
-            <div className="min-h-[150px] card-pixel p-3">
-              <SmartMovers
-                positions={positions}
-                selectedToken={selectedToken}
-                onSelectToken={setSelectedToken}
-                metric="trending"
               />
             </div>
             <div className="min-h-[180px] card-pixel p-3">
