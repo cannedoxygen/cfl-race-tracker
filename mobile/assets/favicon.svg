@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Grass green circle background -->
-  <circle cx="32" cy="32" r="30" fill="#22C55E"/>
+  <!-- Solid green background -->
+  <rect width="64" height="64" fill="#22C55E"/>
 
-  <!-- Lightning bolt - white -->
+  <!-- White lightning bolt -->
   <path d="M36 8L18 34h12l-4 22 18-26H32l4-22z" fill="#FFFFFF"/>
 </svg>

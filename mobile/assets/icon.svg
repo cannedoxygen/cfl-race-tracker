@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Solid green background -->
+  <rect width="1024" height="1024" fill="#22C55E"/>
+
+  <!-- White lightning bolt - centered and sized for visibility -->
+  <path d="M580 80L300 520h200l-60 424 280-520H520l60-344z" fill="#FFFFFF"/>
+</svg>

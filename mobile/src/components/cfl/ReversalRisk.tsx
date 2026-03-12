@@ -17,30 +17,34 @@ interface Props {
   onSelectToken: (mint: string | null) => void;
 }
 
-interface VelocityData {
+interface ReversalData {
   mint: string;
   symbol: string;
   logoURI: string;
   color: string;
-  velocity: number;
-  direction: 'accelerating' | 'decelerating' | 'steady';
-  change: number;
+  reversalStrength: number;
+  peakPoint: number;
+  currentChange: number;
+  addedAt: number;
 }
 
 interface TokenHistory {
   changes: number[];
-  timestamps: number[];
+  recentHigh: number;
+  recentHighTime: number;
 }
 
-const WINDOW_SIZE = 15;
+const WINDOW_SIZE = 60;
+const REVERSAL_EXPIRE_MS = 300000;
 const RANK_LABELS = ['1ST', '2ND', '3RD', '4TH', '5TH'];
-const RANK_COLORS = [COLORS.teal, '#9CA3AF', '#D97706', COLORS.textMuted, COLORS.textMuted];
-const BORDER_COLORS = [COLORS.teal, '#9CA3AF', '#D97706', COLORS.border, COLORS.border];
+const RANK_COLORS = [COLORS.red, '#9CA3AF', '#D97706', COLORS.textMuted, COLORS.textMuted];
+const BORDER_COLORS = [COLORS.red, '#9CA3AF', '#D97706', COLORS.border, COLORS.border];
 
-export function PreRaceVelocity({ positions, selectedToken, onSelectToken }: Props) {
-  const [topVelocity, setTopVelocity] = useState<VelocityData[]>([]);
+export function ReversalRisk({ positions, selectedToken, onSelectToken }: Props) {
+  const [reversals, setReversals] = useState<ReversalData[]>([]);
   const [showInfo, setShowInfo] = useState(false);
   const historyRef = useRef<Map<string, TokenHistory>>(new Map());
+  const activeReversals = useRef<Map<string, ReversalData>>(new Map());
 
   useEffect(() => {
     if (positions.length === 0) return;
@@ -53,89 +57,118 @@ export function PreRaceVelocity({ positions, selectedToken, onSelectToken }: Pro
 
       if (existing) {
         const newChanges = [...existing.changes, currentChange];
-        const newTimestamps = [...existing.timestamps, now];
-
         while (newChanges.length > WINDOW_SIZE) {
           newChanges.shift();
-          newTimestamps.shift();
+        }
+
+        let recentHigh = existing.recentHigh;
+        let recentHighTime = existing.recentHighTime;
+
+        if (currentChange > recentHigh) {
+          recentHigh = currentChange;
+          recentHighTime = now;
+        }
+
+        if (now - recentHighTime > 180000) {
+          recentHigh = Math.max(...newChanges);
+          recentHighTime = now;
         }
 
         historyRef.current.set(pos.mint, {
           changes: newChanges,
-          timestamps: newTimestamps,
+          recentHigh,
+          recentHighTime,
         });
       } else {
         historyRef.current.set(pos.mint, {
           changes: [currentChange],
-          timestamps: [now],
+          recentHigh: currentChange,
+          recentHighTime: now,
         });
       }
     });
 
-    const velocities = positions.map(pos => {
+    positions.forEach(pos => {
       const history = historyRef.current.get(pos.mint);
-      if (!history || history.changes.length < 3) {
-        return { pos, velocity: 0, direction: 'steady' as const, rawVelocity: 0 };
-      }
+      if (!history || history.changes.length < 5) return;
 
+      const currentChange = pos.position;
+      const recentHigh = history.recentHigh;
       const changes = history.changes;
-      const timestamps = history.timestamps;
 
-      const timeDelta = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
-      const changeDelta = changes[changes.length - 1] - changes[0];
-      const velocity = timeDelta > 0 ? changeDelta / timeDelta : 0;
+      if (recentHigh <= 0.3) return;
+      if (currentChange >= recentHigh) return;
 
-      let direction: 'accelerating' | 'decelerating' | 'steady' = 'steady';
-      if (changes.length >= 6) {
-        const mid = Math.floor(changes.length / 2);
-        const firstHalfVelocity = (changes[mid] - changes[0]) / mid;
-        const secondHalfVelocity = (changes[changes.length - 1] - changes[mid]) / (changes.length - mid);
+      const pullback = recentHigh - currentChange;
+      if (pullback < 0.1) return;
 
-        if (Math.abs(secondHalfVelocity) > Math.abs(firstHalfVelocity) * 1.2) {
-          direction = 'accelerating';
-        } else if (Math.abs(secondHalfVelocity) < Math.abs(firstHalfVelocity) * 0.8) {
-          direction = 'decelerating';
-        }
-      }
+      const recentChanges = changes.slice(-5);
+      if (recentChanges.length < 3) return;
+      const recentVelocity = recentChanges[recentChanges.length - 1] - recentChanges[0];
 
-      return { pos, velocity: Math.abs(velocity), direction, rawVelocity: velocity };
+      if (recentVelocity > 0.05) return;
+
+      const distanceFromPeak = (recentHigh - currentChange) / recentHigh;
+      const reversalStrength = pullback * (1 + distanceFromPeak) * (1 - recentVelocity);
+      const existingReversal = activeReversals.current.get(pos.mint);
+
+      activeReversals.current.set(pos.mint, {
+        mint: pos.mint,
+        symbol: pos.symbol,
+        logoURI: pos.logoURI,
+        color: pos.color,
+        reversalStrength,
+        peakPoint: recentHigh,
+        currentChange,
+        addedAt: existingReversal?.addedAt || now,
+      });
     });
 
-    velocities.sort((a, b) => b.velocity - a.velocity);
+    activeReversals.current.forEach((reversal, mint) => {
+      const pos = positions.find(p => p.mint === mint);
+      if (pos) {
+        reversal.currentChange = pos.position;
+      }
+    });
 
-    const top5 = velocities.slice(0, 5).map(({ pos, velocity, direction, rawVelocity }) => ({
-      mint: pos.mint,
-      symbol: pos.symbol,
-      logoURI: pos.logoURI,
-      color: pos.color,
-      velocity: rawVelocity ?? velocity,
-      direction,
-      change: pos.position,
-    } as VelocityData));
+    activeReversals.current.forEach((reversal, mint) => {
+      const pos = positions.find(p => p.mint === mint);
+      const expired = now - reversal.addedAt > REVERSAL_EXPIRE_MS;
+      const pumpedBack = pos && pos.position >= reversal.peakPoint;
 
-    setTopVelocity(top5);
+      if (expired || pumpedBack) {
+        activeReversals.current.delete(mint);
+      }
+    });
+
+    const sortedReversals = Array.from(activeReversals.current.values())
+      .sort((a, b) => b.reversalStrength - a.reversalStrength)
+      .slice(0, 5);
+
+    const top5Mints = new Set(sortedReversals.map(r => r.mint));
+    activeReversals.current.forEach((_, mint) => {
+      if (!top5Mints.has(mint)) {
+        activeReversals.current.delete(mint);
+      }
+    });
+
+    setReversals(sortedReversals);
   }, [positions]);
-
-  const getDirectionIcon = (direction: string, velocity: number) => {
-    if (direction === 'accelerating') return velocity >= 0 ? '⬆⬆' : '⬇⬇';
-    if (direction === 'decelerating') return '→';
-    return velocity >= 0 ? '⬆' : '⬇';
-  };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.header} onPress={() => setShowInfo(true)}>
         <View style={styles.titleRow}>
-          <Text style={styles.icon}>⚡</Text>
-          <Text style={styles.title}>PRE-RACE VELOCITY</Text>
+          <Text style={styles.icon}>⚠</Text>
+          <Text style={styles.title}>REVERSAL RISK</Text>
           <Text style={styles.infoIcon}>ⓘ</Text>
         </View>
-        <Text style={styles.timeframe}>30s</Text>
+        <Text style={styles.timeframe}>5 min</Text>
       </TouchableOpacity>
 
-      {topVelocity.length === 0 ? (
+      {reversals.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>TRACKING...</Text>
+          <Text style={styles.emptyText}>NO REVERSALS</Text>
         </View>
       ) : (
         <ScrollView
@@ -143,10 +176,10 @@ export function PreRaceVelocity({ positions, selectedToken, onSelectToken }: Pro
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {topVelocity.map((token, index) => {
+          {reversals.map((token, index) => {
             const isSelected = selectedToken === token.mint;
-            const isPositive = token.velocity >= 0;
-            const barHeight = Math.min((Math.abs(token.velocity * 10) / 0.5) * 100, 100);
+            const isPositive = token.currentChange >= 0;
+            const barHeight = Math.min((Math.abs(token.currentChange) / 3) * 100, 100);
 
             return (
               <TouchableOpacity
@@ -187,16 +220,14 @@ export function PreRaceVelocity({ positions, selectedToken, onSelectToken }: Pro
                   </View>
 
                   <View style={styles.cardBottom}>
-                    <View style={[styles.badge, isPositive ? styles.longBadge : styles.shortBadge]}>
-                      <Text style={[styles.badgeText, isPositive ? styles.longText : styles.shortText]}>
-                        {isPositive ? 'LONG' : 'SHORT'}
-                      </Text>
+                    <View style={styles.shortBadge}>
+                      <Text style={styles.shortText}>SHORT</Text>
                     </View>
-                    <Text style={[styles.directionIcon, isPositive ? styles.textGreen : styles.textRed]}>
-                      {getDirectionIcon(token.direction, token.velocity)}
+                    <Text style={styles.peakText}>
+                      PEAK {token.peakPoint.toFixed(1)}%
                     </Text>
-                    <Text style={[styles.velocity, isPositive ? styles.textGreen : styles.textRed]}>
-                      {isPositive ? '+' : ''}{(token.velocity * 10).toFixed(2)}/s
+                    <Text style={[styles.change, isPositive ? styles.changePositive : styles.changeNegative]}>
+                      {isPositive ? '+' : ''}{token.currentChange.toFixed(2)}%
                     </Text>
                   </View>
                 </View>
@@ -209,9 +240,9 @@ export function PreRaceVelocity({ positions, selectedToken, onSelectToken }: Pro
       <Modal visible={showInfo} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowInfo(false)}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>PRE-RACE VELOCITY</Text>
+            <Text style={styles.modalTitle}>REVERSAL RISK</Text>
             <Text style={styles.modalText}>
-              Shows which tokens are moving fastest RIGHT NOW. High velocity = likely to continue in race. ⬆⬆ = accelerating, → = slowing down.
+              Tokens that pumped high and are now pulling back. Shows peak hit and current position. Good SHORT candidates for the next race.
             </Text>
             <TouchableOpacity style={styles.modalButton} onPress={() => setShowInfo(false)}>
               <Text style={styles.modalButtonText}>GOT IT</Text>
@@ -239,7 +270,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   icon: {
-    color: COLORS.teal,
+    color: COLORS.red,
     fontSize: 10,
   },
   title: {
@@ -279,7 +310,7 @@ const styles = StyleSheet.create({
   },
   cardSelected: {
     borderColor: COLORS.text,
-    shadowColor: COLORS.teal,
+    shadowColor: COLORS.red,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -333,39 +364,30 @@ const styles = StyleSheet.create({
   cardBottom: {
     alignItems: 'center',
   },
-  badge: {
+  shortBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 3,
-  },
-  longBadge: {
-    backgroundColor: 'rgba(34, 197, 94, 0.3)',
-  },
-  shortBadge: {
     backgroundColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  badgeText: {
-    fontSize: 7,
-    fontWeight: '700',
-  },
-  longText: {
-    color: COLORS.green,
   },
   shortText: {
     color: COLORS.red,
+    fontSize: 7,
+    fontWeight: '700',
   },
-  directionIcon: {
-    fontSize: 10,
+  peakText: {
+    color: COLORS.green,
+    fontSize: 8,
     marginTop: 2,
   },
-  velocity: {
+  change: {
     fontSize: 10,
     fontWeight: '600',
   },
-  textGreen: {
+  changePositive: {
     color: COLORS.green,
   },
-  textRed: {
+  changeNegative: {
     color: COLORS.red,
   },
   modalOverlay: {
@@ -379,12 +401,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderRadius: RADIUS.lg,
     borderWidth: 2,
-    borderColor: COLORS.teal,
+    borderColor: COLORS.red,
     padding: SPACING.lg,
     maxWidth: 300,
   },
   modalTitle: {
-    color: COLORS.teal,
+    color: COLORS.red,
     fontSize: 12,
     fontWeight: '700',
     marginBottom: SPACING.sm,
@@ -399,7 +421,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   modalButtonText: {
-    color: COLORS.teal,
+    color: COLORS.red,
     fontSize: 10,
     fontWeight: '700',
   },

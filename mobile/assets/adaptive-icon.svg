@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Transparent background - Android will use backgroundColor from app.json -->
+  <!-- Lightning bolt centered with safe zone padding (icon content in center 66%) -->
+  <path d="M600 180L380 480h160l-50 364 220-420H540l60-244z" fill="#FFFFFF"/>
+</svg>

@@ -5,3 +5,6 @@ export { AlertBadges } from './AlertBadges';
 export { SmartMovers } from './SmartMovers';
 export { TopMovers } from './TopMovers';
 export { TokenStatsCard } from './TokenStatsCard';
+export { PreRaceVelocity } from './PreRaceVelocity';
+export { BounceAlert } from './BounceAlert';
+export { ReversalRisk } from './ReversalRisk';

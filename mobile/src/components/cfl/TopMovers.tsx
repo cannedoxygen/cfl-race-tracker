@@ -5,6 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { COLORS, SPACING, RADIUS } from '../../constants/theme';
 import { RacePosition } from '../../types';
@@ -28,9 +30,14 @@ interface MoverData {
   direction: 'long' | 'short';
 }
 
+const RANK_LABELS = ['1ST', '2ND', '3RD', '4TH', '5TH'];
+const RANK_COLORS = [COLORS.gold, '#9CA3AF', '#D97706', COLORS.textMuted, COLORS.textMuted];
+const BORDER_COLORS = [COLORS.gold, '#9CA3AF', '#D97706', COLORS.border, COLORS.border];
+
 export function TopMovers({ positions, selectedToken, onSelectToken, intervalMinutes, topCount }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
   const [timeRemaining, setTimeRemaining] = useState('60:00');
+  const [showInfo, setShowInfo] = useState(false);
   const volatilityAccumulator = useRef<Map<string, { volatility: number; peakChange: number; lastUpdate: number }>>(new Map());
   const intervalStartTime = useRef<number>(Date.now());
   const intervalMs = intervalMinutes * 60 * 1000;
@@ -123,151 +130,103 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
 
   const title = intervalMinutes === 60 ? 'HOURLY' : `${intervalMinutes} MIN`;
 
-  if (topMovers.length === 0) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <Text style={styles.star}>★</Text>
-            <Text style={styles.title}>{title} TOP MOVERS</Text>
-          </View>
-          <Text style={styles.timer}>{timeRemaining}</Text>
+  return (
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.header} onPress={() => setShowInfo(true)}>
+        <View style={styles.titleRow}>
+          <Text style={styles.star}>★</Text>
+          <Text style={styles.title}>{title} TOP MOVERS</Text>
+          <Text style={styles.infoIcon}>ⓘ</Text>
         </View>
+        <Text style={styles.timer}>{timeRemaining}</Text>
+      </TouchableOpacity>
+
+      {topMovers.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>TRACKING...</Text>
         </View>
-      </View>
-    );
-  }
-
-  // Podium style for top 3
-  if (topCount === 3) {
-    const rankColors = [COLORS.gold, '#C0C0C0', '#CD7F32'];
-    const rankLabels = ['1ST', '2ND', '3RD'];
-
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <Text style={styles.star}>★</Text>
-            <Text style={styles.title}>{title} TOP MOVERS</Text>
-          </View>
-          <Text style={styles.timer}>{timeRemaining}</Text>
-        </View>
-
-        <View style={styles.podium}>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
           {topMovers.map((mover, index) => {
             const isSelected = selectedToken === mover.mint;
             const isPositive = mover.currentChange >= 0;
+            const barHeight = Math.min((Math.abs(mover.currentChange) / 3) * 100, 100);
 
             return (
               <TouchableOpacity
                 key={mover.mint}
                 style={[
-                  styles.podiumCard,
-                  { borderColor: rankColors[index] },
-                  isSelected && styles.podiumCardSelected,
+                  styles.card,
+                  { borderColor: BORDER_COLORS[index] },
+                  isSelected && styles.cardSelected,
                 ]}
                 onPress={() => onSelectToken(isSelected ? null : mover.mint)}
               >
-                <Text style={[styles.podiumRank, { color: rankColors[index] }]}>
-                  {rankLabels[index]}
-                </Text>
+                <View
+                  style={[
+                    styles.progressBar,
+                    {
+                      height: `${barHeight}%`,
+                      backgroundColor: isPositive ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+                    }
+                  ]}
+                />
 
-                <View style={[styles.podiumLogo, { borderColor: mover.color }]}>
-                  {typeof mover.logoURI === 'string' && mover.logoURI.length > 0 ? (
-                    <Image source={{ uri: mover.logoURI }} style={styles.podiumLogoImg} />
-                  ) : (
-                    <Text style={[styles.logoFallback, { color: mover.color }]}>
-                      {mover.symbol.slice(0, 2)}
-                    </Text>
-                  )}
-                </View>
-
-                <Text style={styles.podiumSymbol} numberOfLines={1}>{mover.symbol}</Text>
-
-                <View style={[styles.directionBadge, isPositive ? styles.longBadge : styles.shortBadge]}>
-                  <Text style={[styles.directionText, isPositive ? styles.longText : styles.shortText]}>
-                    {isPositive ? 'LONG' : 'SHORT'}
+                <View style={styles.cardContent}>
+                  <Text style={[styles.rank, { color: RANK_COLORS[index] }]}>
+                    {RANK_LABELS[index]}
                   </Text>
-                </View>
 
-                <Text style={[styles.podiumChange, isPositive ? styles.changePositive : styles.changeNegative]}>
-                  {isPositive ? '+' : ''}{mover.currentChange.toFixed(2)}%
-                </Text>
-                <Text style={styles.podiumPeak}>
-                  ⬆{mover.peakChange.toFixed(2)}%
-                </Text>
+                  <View style={styles.cardMiddle}>
+                    <View style={[styles.logoContainer, { borderColor: mover.color }]}>
+                      {typeof mover.logoURI === 'string' && mover.logoURI.length > 0 ? (
+                        <Image source={{ uri: mover.logoURI }} style={styles.logo} />
+                      ) : (
+                        <Text style={[styles.logoFallback, { color: mover.color }]}>
+                          {mover.symbol.slice(0, 2)}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={styles.symbol} numberOfLines={1}>{mover.symbol}</Text>
+                  </View>
+
+                  <View style={styles.cardBottom}>
+                    <View style={[styles.badge, isPositive ? styles.longBadge : styles.shortBadge]}>
+                      <Text style={[styles.badgeText, isPositive ? styles.longText : styles.shortText]}>
+                        {isPositive ? 'LONG' : 'SHORT'}
+                      </Text>
+                    </View>
+                    <Text style={styles.peakText}>
+                      PEAK {mover.peakChange.toFixed(1)}%
+                    </Text>
+                    <Text style={[styles.change, isPositive ? styles.changePositive : styles.changeNegative]}>
+                      {isPositive ? '+' : ''}{mover.currentChange.toFixed(2)}%
+                    </Text>
+                  </View>
+                </View>
               </TouchableOpacity>
             );
           })}
+        </ScrollView>
+      )}
 
-          {/* Empty slots */}
-          {[...Array(3 - topMovers.length)].map((_, i) => (
-            <View key={`empty-${i}`} style={styles.podiumCardEmpty}>
-              <Text style={styles.emptyText}>—</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  }
-
-  // List style for top 5
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.star}>★</Text>
-          <Text style={styles.title}>{title} TOP MOVERS</Text>
-        </View>
-        <Text style={styles.timer}>{timeRemaining}</Text>
-      </View>
-
-      <View style={styles.list}>
-        {topMovers.map((mover, index) => {
-          const isSelected = selectedToken === mover.mint;
-          const isPositive = mover.currentChange >= 0;
-
-          return (
-            <TouchableOpacity
-              key={mover.mint}
-              style={[
-                styles.row,
-                index === 0 && styles.rowFirst,
-                isSelected && styles.rowSelected,
-              ]}
-              onPress={() => onSelectToken(isSelected ? null : mover.mint)}
-            >
-              <Text style={[styles.rank, index === 0 && styles.rankFirst]}>
-                {index + 1}
-              </Text>
-
-              <View style={[styles.logoContainer, { borderColor: mover.color }]}>
-                {typeof mover.logoURI === 'string' && mover.logoURI.length > 0 ? (
-                  <Image source={{ uri: mover.logoURI }} style={styles.logo} />
-                ) : (
-                  <Text style={[styles.logoFallback, { color: mover.color }]}>
-                    {mover.symbol.slice(0, 2)}
-                  </Text>
-                )}
-              </View>
-
-              <Text style={styles.symbol} numberOfLines={1}>{mover.symbol}</Text>
-
-              <View style={[styles.directionBadge, isPositive ? styles.longBadge : styles.shortBadge]}>
-                <Text style={[styles.directionText, isPositive ? styles.longText : styles.shortText]}>
-                  {isPositive ? 'L' : 'S'}
-                </Text>
-              </View>
-
-              <Text style={styles.peakText}>
-                {mover.peakChange.toFixed(2)}%
-              </Text>
+      <Modal visible={showInfo} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowInfo(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{title} TOP MOVERS</Text>
+            <Text style={styles.modalText}>
+              Tokens with the most cumulative price movement over the hour. High volatility = more trading opportunities. Peak shows the highest % move seen.
+            </Text>
+            <TouchableOpacity style={styles.modalButton} onPress={() => setShowInfo(false)}>
+              <Text style={styles.modalButtonText}>GOT IT</Text>
             </TouchableOpacity>
-          );
-        })}
-      </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -288,7 +247,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   star: {
-    color: COLORS.pink,
+    color: COLORS.gold,
     fontSize: 10,
   },
   title: {
@@ -296,8 +255,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
+  infoIcon: {
+    color: COLORS.textMuted,
+    fontSize: 8,
+  },
   timer: {
-    color: COLORS.pink,
+    color: COLORS.gold,
     fontSize: 10,
     fontWeight: '600',
   },
@@ -311,43 +274,46 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  podium: {
-    flexDirection: 'row',
+  scrollContent: {
     gap: SPACING.sm,
-    flex: 1,
+    paddingRight: SPACING.sm,
   },
-  podiumCard: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SPACING.sm,
+  card: {
+    width: 80,
     borderRadius: RADIUS.md,
     borderWidth: 2,
     backgroundColor: 'rgba(13,17,23,0.5)',
+    padding: SPACING.sm,
+    overflow: 'hidden',
   },
-  podiumCardSelected: {
+  cardSelected: {
     borderColor: COLORS.text,
     shadowColor: COLORS.gold,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
   },
-  podiumCardEmpty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SPACING.sm,
-    borderRadius: RADIUS.md,
-    borderWidth: 2,
-    borderColor: 'rgba(48,54,61,0.3)',
-    backgroundColor: 'rgba(13,17,23,0.3)',
+  progressBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  podiumRank: {
+  cardContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  rank: {
     fontSize: 10,
     fontWeight: '700',
-    marginBottom: 4,
   },
-  podiumLogo: {
+  cardMiddle: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoContainer: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -357,97 +323,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  podiumLogoImg: {
+  logo: {
     width: 28,
     height: 28,
     borderRadius: 14,
   },
-  podiumSymbol: {
+  logoFallback: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  symbol: {
     color: COLORS.text,
     fontSize: 12,
     fontWeight: '500',
     marginTop: 4,
     maxWidth: '100%',
   },
-  podiumChange: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  podiumPeak: {
-    color: COLORS.gold,
-    fontSize: 8,
-    fontWeight: '600',
-  },
-  list: {
-    gap: 4,
-  },
-  row: {
-    flexDirection: 'row',
+  cardBottom: {
     alignItems: 'center',
-    backgroundColor: 'rgba(13,17,23,0.5)',
-    borderWidth: 1,
-    borderColor: 'rgba(48,54,61,0.5)',
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
   },
-  rowFirst: {
-    borderColor: 'rgba(251,191,36,0.5)',
-  },
-  rowSelected: {
-    borderColor: COLORS.pink,
-    borderWidth: 2,
-  },
-  rank: {
-    color: COLORS.textMuted,
-    fontSize: 10,
-    fontWeight: '600',
-    width: 16,
-    textAlign: 'center',
-  },
-  rankFirst: {
-    color: COLORS.gold,
-  },
-  logoContainer: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    marginRight: 6,
-  },
-  logo: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-  logoFallback: {
-    fontSize: 7,
-    fontWeight: '700',
-  },
-  symbol: {
-    flex: 1,
-    color: COLORS.text,
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  directionBadge: {
-    paddingHorizontal: 4,
+  badge: {
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 3,
-    marginRight: 6,
   },
   longBadge: {
-    backgroundColor: 'rgba(63,185,80,0.3)',
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
   },
   shortBadge: {
-    backgroundColor: 'rgba(248,81,73,0.3)',
+    backgroundColor: 'rgba(239, 68, 68, 0.3)',
   },
-  directionText: {
+  badgeText: {
     fontSize: 7,
     fontWeight: '700',
   },
@@ -457,17 +363,54 @@ const styles = StyleSheet.create({
   shortText: {
     color: COLORS.red,
   },
+  peakText: {
+    color: COLORS.gold,
+    fontSize: 8,
+    marginTop: 2,
+  },
+  change: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
   changePositive: {
     color: COLORS.green,
   },
   changeNegative: {
     color: COLORS.red,
   },
-  peakText: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
+    borderRadius: RADIUS.lg,
+    borderWidth: 2,
+    borderColor: COLORS.gold,
+    padding: SPACING.lg,
+    maxWidth: 300,
+  },
+  modalTitle: {
+    color: COLORS.gold,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: SPACING.sm,
+  },
+  modalText: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: SPACING.md,
+  },
+  modalButton: {
+    alignSelf: 'flex-start',
+  },
+  modalButtonText: {
     color: COLORS.gold,
     fontSize: 10,
-    fontWeight: '600',
-    width: 50,
-    textAlign: 'right',
+    fontWeight: '700',
   },
 });

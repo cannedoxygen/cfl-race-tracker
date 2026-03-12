@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Image,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { COLORS, SPACING, RADIUS } from '../../constants/theme';
 import { RacePosition } from '../../types';
@@ -49,8 +50,9 @@ const INFO_DETAILS: Record<MetricType, string> = {
   trending: 'Tokens moving consistently in one direction over 5 minutes. Less choppy, more predictable.',
 };
 
-// Decay rate: score reduces by this much per second of inactivity
-const DECAY_RATE = 0.02; // 2% per second
+const RANK_LABELS = ['1ST', '2ND', '3RD', '4TH', '5TH'];
+const RANK_COLORS = [COLORS.pink, '#9CA3AF', '#D97706', COLORS.textMuted, COLORS.textMuted];
+const BORDER_COLORS = [COLORS.pink, '#9CA3AF', '#D97706', COLORS.border, COLORS.border];
 
 export function SmartMovers({ positions, selectedToken, onSelectToken, metric }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
@@ -146,11 +148,6 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
           break;
       }
 
-      // Apply time decay - reduce score for tokens that haven't updated recently
-      const timeSinceUpdate = now - history.lastUpdate;
-      const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
-      score *= decayFactor;
-
       return { pos, score };
     });
 
@@ -171,7 +168,6 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <TouchableOpacity style={styles.header} onPress={() => setShowInfo(true)}>
         <View style={styles.titleRow}>
           <Text style={styles.star}>★</Text>
@@ -181,59 +177,81 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
         <Text style={styles.timeframe}>5 min</Text>
       </TouchableOpacity>
 
-      {/* Content */}
       {topMovers.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>TRACKING...</Text>
         </View>
       ) : (
-        <View style={styles.list}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
           {topMovers.map((mover, index) => {
             const isSelected = selectedToken === mover.mint;
             const isPositive = mover.change >= 0;
+            const barHeight = Math.min((Math.abs(mover.change) / 3) * 100, 100);
 
             return (
               <TouchableOpacity
                 key={mover.mint}
                 style={[
-                  styles.row,
-                  index === 0 && styles.rowFirst,
-                  isSelected && styles.rowSelected,
+                  styles.card,
+                  { borderColor: BORDER_COLORS[index] },
+                  isSelected && styles.cardSelected,
                 ]}
                 onPress={() => onSelectToken(isSelected ? null : mover.mint)}
               >
-                <Text style={[styles.rank, index === 0 && styles.rankFirst]}>
-                  {index + 1}
-                </Text>
+                {/* Progress bar from bottom */}
+                <View
+                  style={[
+                    styles.progressBar,
+                    {
+                      height: `${barHeight}%`,
+                      backgroundColor: isPositive ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+                    }
+                  ]}
+                />
 
-                <View style={[styles.logoContainer, { borderColor: mover.color }]}>
-                  {typeof mover.logoURI === 'string' && mover.logoURI.length > 0 ? (
-                    <Image source={{ uri: mover.logoURI }} style={styles.logo} />
-                  ) : (
-                    <Text style={[styles.logoFallback, { color: mover.color }]}>
-                      {mover.symbol.slice(0, 2)}
-                    </Text>
-                  )}
-                </View>
-
-                <Text style={styles.symbol} numberOfLines={1}>{mover.symbol}</Text>
-
-                <View style={[styles.directionBadge, isPositive ? styles.longBadge : styles.shortBadge]}>
-                  <Text style={[styles.directionText, isPositive ? styles.longText : styles.shortText]}>
-                    {isPositive ? 'L' : 'S'}
+                {/* Content spread vertically */}
+                <View style={styles.cardContent}>
+                  {/* Top: Rank */}
+                  <Text style={[styles.rank, { color: RANK_COLORS[index] }]}>
+                    {RANK_LABELS[index]}
                   </Text>
-                </View>
 
-                <Text style={[styles.change, isPositive ? styles.changePositive : styles.changeNegative]}>
-                  {isPositive ? '+' : ''}{mover.change.toFixed(2)}%
-                </Text>
+                  {/* Middle: Logo + Symbol */}
+                  <View style={styles.cardMiddle}>
+                    <View style={[styles.logoContainer, { borderColor: mover.color }]}>
+                      {typeof mover.logoURI === 'string' && mover.logoURI.length > 0 ? (
+                        <Image source={{ uri: mover.logoURI }} style={styles.logo} />
+                      ) : (
+                        <Text style={[styles.logoFallback, { color: mover.color }]}>
+                          {mover.symbol.slice(0, 2)}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={styles.symbol} numberOfLines={1}>{mover.symbol}</Text>
+                  </View>
+
+                  {/* Bottom: Badge + Change */}
+                  <View style={styles.cardBottom}>
+                    <View style={[styles.badge, isPositive ? styles.longBadge : styles.shortBadge]}>
+                      <Text style={[styles.badgeText, isPositive ? styles.longText : styles.shortText]}>
+                        {isPositive ? 'LONG' : 'SHORT'}
+                      </Text>
+                    </View>
+                    <Text style={[styles.change, isPositive ? styles.changePositive : styles.changeNegative]}>
+                      {isPositive ? '+' : ''}{mover.change.toFixed(2)}%
+                    </Text>
+                  </View>
+                </View>
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       )}
 
-      {/* Info Modal */}
       <Modal visible={showInfo} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowInfo(false)}>
           <View style={styles.modalContent}>
@@ -291,75 +309,86 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  list: {
-    gap: 4,
+  scrollContent: {
+    gap: SPACING.sm,
+    paddingRight: SPACING.sm,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(13,17,23,0.5)',
-    borderWidth: 1,
-    borderColor: 'rgba(48,54,61,0.5)',
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
-  },
-  rowFirst: {
-    borderColor: 'rgba(251,191,36,0.5)',
-  },
-  rowSelected: {
-    borderColor: COLORS.pink,
+  card: {
+    width: 80,
+    borderRadius: RADIUS.md,
     borderWidth: 2,
+    backgroundColor: 'rgba(13,17,23,0.5)',
+    padding: SPACING.sm,
+    overflow: 'hidden',
+  },
+  cardSelected: {
+    borderColor: COLORS.text,
+    shadowColor: COLORS.pink,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+  },
+  progressBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   rank: {
-    color: COLORS.textMuted,
     fontSize: 10,
-    fontWeight: '600',
-    width: 16,
-    textAlign: 'center',
+    fontWeight: '700',
   },
-  rankFirst: {
-    color: COLORS.gold,
+  cardMiddle: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logoContainer: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    marginRight: 6,
   },
   logo: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   logoFallback: {
-    fontSize: 7,
+    fontSize: 10,
     fontWeight: '700',
   },
   symbol: {
-    flex: 1,
     color: COLORS.text,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
+    marginTop: 4,
+    maxWidth: '100%',
   },
-  directionBadge: {
-    paddingHorizontal: 4,
+  cardBottom: {
+    alignItems: 'center',
+  },
+  badge: {
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 3,
-    marginRight: 6,
   },
   longBadge: {
-    backgroundColor: 'rgba(63,185,80,0.3)',
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
   },
   shortBadge: {
-    backgroundColor: 'rgba(248,81,73,0.3)',
+    backgroundColor: 'rgba(239, 68, 68, 0.3)',
   },
-  directionText: {
+  badgeText: {
     fontSize: 7,
     fontWeight: '700',
   },
@@ -372,8 +401,7 @@ const styles = StyleSheet.create({
   change: {
     fontSize: 10,
     fontWeight: '600',
-    width: 55,
-    textAlign: 'right',
+    marginTop: 2,
   },
   changePositive: {
     color: COLORS.green,
