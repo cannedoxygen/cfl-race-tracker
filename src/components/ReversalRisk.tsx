@@ -217,64 +217,78 @@ export function ReversalRisk({ positions, selectedToken, onSelectToken }: Props)
       <div className="flex-1 flex flex-col gap-1 overflow-hidden relative">
         {reversals.map((token, index) => {
           const isSelected = selectedToken === token.mint;
+          const absValue = Math.abs(token.currentChange);
+          const barWidth = Math.min((absValue / 3) * 100, 100); // Max at 3%
 
           return (
             <button
               key={token.mint}
               onClick={() => onSelectToken(isSelected ? null : token.mint)}
               className={clsx(
-                'flex items-center gap-2 px-2 py-1 rounded transition-all',
+                'flex items-center gap-2 px-2 py-1 rounded transition-all relative overflow-hidden',
                 'border bg-cfl-bg/50 hover:bg-cfl-border/30',
                 index === 0 ? 'border-cfl-red/50' : 'border-cfl-border/50',
                 isSelected && 'ring-1 ring-cfl-pink'
               )}
             >
-              {/* Rank */}
-              <span className={clsx(
-                'font-pixel text-[8px] w-4',
-                index === 0 ? 'text-cfl-red' : 'text-cfl-text-muted'
-              )}>
-                {index + 1}
-              </span>
-
-              {/* Logo */}
+              {/* Progress bar */}
               <div
-                className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-                style={{ backgroundColor: `${token.color}30` }}
-              >
-                {token.logoURI ? (
-                  <Image
-                    src={token.logoURI}
-                    alt={token.symbol}
-                    width={16}
-                    height={16}
-                    className="rounded-full"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="font-pixel text-[6px]" style={{ color: token.color }}>
-                    {token.symbol.slice(0, 2)}
-                  </span>
-                )}
+                className="absolute left-0 top-0 bottom-0 transition-all duration-500"
+                style={{
+                  width: `${barWidth}%`,
+                  backgroundColor: token.currentChange >= 0 ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+                }}
+              />
+
+              {/* Content */}
+              <div className="relative flex items-center gap-2 w-full">
+                {/* Rank */}
+                <span className={clsx(
+                  'font-pixel text-[8px] w-4',
+                  index === 0 ? 'text-cfl-red' : 'text-cfl-text-muted'
+                )}>
+                  {index + 1}
+                </span>
+
+                {/* Logo */}
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+                  style={{ backgroundColor: `${token.color}30` }}
+                >
+                  {token.logoURI ? (
+                    <Image
+                      src={token.logoURI}
+                      alt={token.symbol}
+                      width={16}
+                      height={16}
+                      className="rounded-full"
+                      unoptimized
+                    />
+                  ) : (
+                    <span className="font-pixel text-[6px]" style={{ color: token.color }}>
+                      {token.symbol.slice(0, 2)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Symbol */}
+                <span className="font-pixel-body text-xs text-white flex-1 text-left truncate">
+                  {token.symbol}
+                </span>
+
+                {/* Peak point */}
+                <span className="font-pixel text-[6px] text-cfl-green">
+                  ↑{token.peakPoint.toFixed(2)}%
+                </span>
+
+                {/* Current change */}
+                <span className={clsx(
+                  'font-pixel text-[8px] w-12 text-right',
+                  token.currentChange >= 0 ? 'text-cfl-green' : 'text-cfl-red'
+                )}>
+                  {token.currentChange >= 0 ? '+' : ''}{token.currentChange.toFixed(2)}%
+                </span>
               </div>
-
-              {/* Symbol */}
-              <span className="font-pixel-body text-xs text-white flex-1 text-left truncate">
-                {token.symbol}
-              </span>
-
-              {/* Peak point */}
-              <span className="font-pixel text-[6px] text-cfl-green">
-                ↑{token.peakPoint.toFixed(2)}%
-              </span>
-
-              {/* Current change */}
-              <span className={clsx(
-                'font-pixel text-[8px] w-12 text-right',
-                token.currentChange >= 0 ? 'text-cfl-green' : 'text-cfl-red'
-              )}>
-                {token.currentChange >= 0 ? '+' : ''}{token.currentChange.toFixed(2)}%
-              </span>
             </button>
           );
         })}

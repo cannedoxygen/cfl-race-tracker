@@ -261,16 +261,16 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
                     {mover.direction === 'long' ? 'LONG' : 'SHORT'}
                   </span>
 
-                  {/* Current change + max volatility */}
-                  <div className="flex flex-col items-center mt-0.5">
+                  {/* Current change + max volatility - always stacked */}
+                  <div className="flex flex-col items-center mt-0.5 w-full">
                     <span className={clsx(
-                      'font-pixel text-[8px]',
+                      'font-pixel text-[8px] whitespace-nowrap',
                       mover.currentChange >= 0 ? 'text-cfl-green' : 'text-cfl-red'
                     )}>
                       {mover.currentChange >= 0 ? '+' : ''}{mover.currentChange.toFixed(2)}%
                     </span>
-                    <span className="font-pixel text-[6px] text-cfl-gold">
-                      MAX {mover.maxMove.toFixed(2)}%
+                    <span className="font-pixel text-[5px] text-cfl-gold whitespace-nowrap">
+                      MAX {mover.maxMove.toFixed(1)}%
                     </span>
                   </div>
                 </div>
