@@ -162,6 +162,10 @@ export function BounceAlert({ positions, selectedToken, onSelectToken }: Props) 
     setBounces(sortedBounces);
   }, [positions]);
 
+  const rankLabels = ['1ST', '2ND', '3RD', '4TH', '5TH'];
+  const rankColors = ['text-cfl-orange', 'text-gray-400', 'text-amber-600', 'text-cfl-text-muted', 'text-cfl-text-muted'];
+  const borderColors = ['border-cfl-orange', 'border-gray-400', 'border-amber-600', 'border-cfl-border', 'border-cfl-border'];
+
   if (bounces.length === 0) {
     return (
       <div className="flex flex-col h-full relative">
@@ -210,84 +214,86 @@ export function BounceAlert({ positions, selectedToken, onSelectToken }: Props) 
         <span className="font-pixel text-[6px] text-cfl-text-muted">5 min</span>
       </button>
 
-      <div className="flex-1 flex flex-col gap-1 overflow-hidden relative">
-        {bounces.map((token, index) => {
-          const isSelected = selectedToken === token.mint;
-          const absValue = Math.abs(token.currentChange);
-          const barWidth = Math.min((absValue / 3) * 100, 100); // Max at 3%
+      {/* Horizontal scrollable cards */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden relative">
+        <div className="flex gap-2 h-full min-w-max">
+          {bounces.map((token, index) => {
+            const isSelected = selectedToken === token.mint;
+            const absValue = Math.abs(token.currentChange);
+            const barHeight = Math.min((absValue / 3) * 100, 100); // Max at 3%
 
-          return (
-            <button
-              key={token.mint}
-              onClick={() => onSelectToken(isSelected ? null : token.mint)}
-              className={clsx(
-                'flex items-center gap-2 px-2 py-1 rounded transition-all relative overflow-hidden',
-                'border bg-cfl-bg/50 hover:bg-cfl-border/30',
-                index === 0 ? 'border-cfl-orange/50' : 'border-cfl-border/50',
-                isSelected && 'ring-1 ring-cfl-pink'
-              )}
-            >
-              {/* Progress bar */}
-              <div
-                className="absolute left-0 top-0 bottom-0 transition-all duration-500"
-                style={{
-                  width: `${barWidth}%`,
-                  backgroundColor: token.currentChange >= 0 ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                }}
-              />
-
-              {/* Content */}
-              <div className="relative flex items-center gap-2 w-full">
-                {/* Rank */}
-                <span className={clsx(
-                  'font-pixel text-[8px] w-4',
-                  index === 0 ? 'text-cfl-orange' : 'text-cfl-text-muted'
-                )}>
-                  {index + 1}
-                </span>
-
-                {/* Logo */}
+            return (
+              <button
+                key={token.mint}
+                onClick={() => onSelectToken(isSelected ? null : token.mint)}
+                className={clsx(
+                  'w-20 flex flex-col items-center justify-end p-2 rounded-lg transition-all relative overflow-hidden flex-shrink-0',
+                  `border-2 ${borderColors[index]}`,
+                  'hover:scale-105',
+                  isSelected && 'ring-2 ring-white shadow-lg'
+                )}
+              >
+                {/* Progress bar from bottom */}
                 <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-                  style={{ backgroundColor: `${token.color}30` }}
-                >
-                  {token.logoURI ? (
-                    <Image
-                      src={token.logoURI}
-                      alt={token.symbol}
-                      width={16}
-                      height={16}
-                      className="rounded-full"
-                      unoptimized
-                    />
-                  ) : (
-                    <span className="font-pixel text-[6px]" style={{ color: token.color }}>
-                      {token.symbol.slice(0, 2)}
+                  className="absolute left-0 right-0 bottom-0 transition-all duration-500"
+                  style={{
+                    height: `${barHeight}%`,
+                    backgroundColor: token.currentChange >= 0 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+                  }}
+                />
+
+                {/* Content */}
+                <div className="relative flex flex-col items-center">
+                  <span className={clsx('font-pixel text-[8px] mb-1', rankColors[index])}>
+                    {rankLabels[index]}
+                  </span>
+
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2"
+                    style={{ backgroundColor: `${token.color}30`, borderColor: token.color }}
+                  >
+                    {token.logoURI ? (
+                      <Image
+                        src={token.logoURI}
+                        alt={token.symbol}
+                        width={32}
+                        height={32}
+                        className="rounded-full"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="font-pixel text-xs" style={{ color: token.color }}>
+                        {token.symbol.slice(0, 2)}
+                      </span>
+                    )}
+                  </div>
+
+                  <span className="font-pixel-body text-sm text-white mt-1 truncate max-w-full">
+                    {token.symbol}
+                  </span>
+
+                  {/* LONG badge - these are bounce/long candidates */}
+                  <span className="font-pixel text-[6px] px-1.5 py-0.5 rounded mt-1 bg-cfl-green/30 text-cfl-green">
+                    LONG
+                  </span>
+
+                  {/* Low + Current change stacked */}
+                  <div className="flex flex-col items-center mt-0.5 w-full">
+                    <span className="font-pixel text-[6px] text-cfl-red whitespace-nowrap">
+                      LOW {token.lowPoint.toFixed(1)}%
                     </span>
-                  )}
+                    <span className={clsx(
+                      'font-pixel text-[8px] whitespace-nowrap',
+                      token.currentChange >= 0 ? 'text-cfl-green' : 'text-cfl-red'
+                    )}>
+                      {token.currentChange >= 0 ? '+' : ''}{token.currentChange.toFixed(2)}%
+                    </span>
+                  </div>
                 </div>
-
-                {/* Symbol */}
-                <span className="font-pixel-body text-xs text-white flex-1 text-left truncate">
-                  {token.symbol}
-                </span>
-
-                {/* Low point */}
-                <span className="font-pixel text-[6px] text-cfl-red">
-                  ↓{token.lowPoint.toFixed(2)}%
-                </span>
-
-                {/* Current change */}
-                <span className={clsx(
-                  'font-pixel text-[8px] w-12 text-right',
-                  token.currentChange >= 0 ? 'text-cfl-green' : 'text-cfl-red'
-                )}>
-                  {token.currentChange >= 0 ? '+' : ''}{token.currentChange.toFixed(2)}%
-                </span>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
 
         {showInfo && (
           <div className="absolute bottom-0 left-0 right-0 bg-cfl-card border-2 border-cfl-orange rounded-lg p-2 shadow-lg animate-slideFromBottom z-10">
