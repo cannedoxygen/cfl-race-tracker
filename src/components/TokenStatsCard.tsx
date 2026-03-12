@@ -281,19 +281,6 @@ export function TokenStatsCard({ token, onClose }: Props) {
           </div>
         </div>
 
-        {/* Volume Info */}
-        <div className="flex justify-between items-center bg-cfl-bg rounded-lg p-3 border border-cfl-border">
-          <div>
-            <div className="font-pixel text-[7px] text-cfl-text-muted">BOOST</div>
-            <div className="font-pixel text-sm text-cfl-teal">{token.boost || '—'}</div>
-          </div>
-          <div className="text-right">
-            <div className="font-pixel text-[7px] text-cfl-text-muted">VOLUME SPIKE</div>
-            <div className={`font-pixel text-sm ${token.volumeSpike ? 'text-cfl-orange' : 'text-cfl-text-muted'}`}>
-              {token.volumeSpike ? 'YES ⚡' : 'NO'}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
