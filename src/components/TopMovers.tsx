@@ -19,14 +19,16 @@ interface MoverData {
   logoURI: string;
   color: string;
   score: number;
-  peakChange: number;
+  peakHigh: number;    // Highest positive peak
+  peakLow: number;     // Lowest negative peak (stored as negative)
   currentChange: number; // Rolling 60s change (like leaderboard)
   direction: 'long' | 'short';
 }
 
 interface TokenHistory {
   changes: number[];
-  peakChange: number;
+  peakHigh: number;  // Highest positive value
+  peakLow: number;   // Lowest negative value (stored as negative)
   lastUpdate: number;
 }
 
@@ -66,7 +68,6 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
     positions.forEach(pos => {
       const existing = historyRef.current.get(pos.mint);
       const currentChange = pos.position;
-      const absChange = Math.abs(currentChange);
 
       if (existing) {
         const newChanges = [...existing.changes, currentChange];
@@ -74,20 +75,23 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
           newChanges.shift();
         }
 
-        // Apply decay to peakChange, then update with new value if higher
+        // Apply decay to peaks, then update with new value if more extreme
         const timeSinceUpdate = now - existing.lastUpdate;
         const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
-        const decayedPeak = existing.peakChange * decayFactor;
+        const decayedHigh = existing.peakHigh * decayFactor;
+        const decayedLow = existing.peakLow * decayFactor;
 
         historyRef.current.set(pos.mint, {
           changes: newChanges,
-          peakChange: Math.max(decayedPeak, absChange),
+          peakHigh: currentChange > 0 ? Math.max(decayedHigh, currentChange) : decayedHigh,
+          peakLow: currentChange < 0 ? Math.min(decayedLow, currentChange) : decayedLow,
           lastUpdate: now,
         });
       } else {
         historyRef.current.set(pos.mint, {
           changes: [currentChange],
-          peakChange: absChange,
+          peakHigh: currentChange > 0 ? currentChange : 0,
+          peakLow: currentChange < 0 ? currentChange : 0,
           lastUpdate: now,
         });
       }
@@ -97,7 +101,7 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
     const scored = positions.map(pos => {
       const history = historyRef.current.get(pos.mint);
       if (!history || history.changes.length < 3) {
-        return { pos, score: 0, peakChange: 0 };
+        return { pos, score: 0, peakHigh: 0, peakLow: 0 };
       }
 
       const changes = history.changes;
@@ -123,19 +127,20 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
       const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
       score *= decayFactor;
 
-      return { pos, score, peakChange: history.peakChange };
+      return { pos, score, peakHigh: history.peakHigh, peakLow: history.peakLow };
     });
 
     // Sort by score and take top N
     scored.sort((a, b) => b.score - a.score);
 
-    const topN = scored.slice(0, topCount).map(({ pos, score, peakChange }) => ({
+    const topN = scored.slice(0, topCount).map(({ pos, score, peakHigh, peakLow }) => ({
       mint: pos.mint,
       symbol: pos.symbol,
       logoURI: pos.logoURI,
       color: pos.color,
       score,
-      peakChange,
+      peakHigh,
+      peakLow,
       currentChange: pos.position,
       direction: pos.position >= 0 ? 'long' : 'short',
     } as MoverData));
@@ -249,7 +254,7 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
                   {mover.direction === 'long' ? 'LONG' : 'SHORT'}
                 </span>
 
-                {/* Two numbers: current rolling change + peak */}
+                {/* Two numbers: current rolling change + relevant peak */}
                 <div className="flex flex-col items-center mt-0.5">
                   <span className={clsx(
                     'font-pixel text-[8px]',
@@ -257,9 +262,16 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
                   )}>
                     {mover.currentChange >= 0 ? '+' : ''}{mover.currentChange.toFixed(2)}%
                   </span>
-                  <span className="font-pixel text-[6px] text-cfl-gold">
-                    ⬆{mover.peakChange.toFixed(2)}%
-                  </span>
+                  {/* Show relevant peak based on direction */}
+                  {mover.direction === 'long' ? (
+                    <span className="font-pixel text-[6px] text-cfl-green">
+                      ⬆{mover.peakHigh.toFixed(2)}%
+                    </span>
+                  ) : (
+                    <span className="font-pixel text-[6px] text-cfl-red">
+                      ⬇{Math.abs(mover.peakLow).toFixed(2)}%
+                    </span>
+                  )}
                 </div>
               </button>
             );
@@ -347,9 +359,15 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
                 {mover.direction === 'long' ? 'L' : 'S'}
               </span>
 
-              {/* Peak */}
-              <span className="font-pixel text-[8px] text-cfl-gold w-12 text-right">
-                {mover.peakChange.toFixed(2)}%
+              {/* Peak - show relevant peak based on direction */}
+              <span className={clsx(
+                'font-pixel text-[8px] w-12 text-right',
+                mover.direction === 'long' ? 'text-cfl-green' : 'text-cfl-red'
+              )}>
+                {mover.direction === 'long'
+                  ? `+${mover.peakHigh.toFixed(2)}%`
+                  : `${mover.peakLow.toFixed(2)}%`
+                }
               </span>
             </button>
           );
