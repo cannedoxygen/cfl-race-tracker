@@ -231,7 +231,7 @@ export function ReversalRisk({ positions, selectedToken, onSelectToken }: Props)
                 key={token.mint}
                 onClick={() => onSelectToken(isSelected ? null : token.mint)}
                 className={clsx(
-                  'w-20 flex flex-col items-center justify-end p-2 rounded-lg transition-all relative overflow-hidden flex-shrink-0',
+                  'w-20 flex flex-col items-center p-2 rounded-lg transition-all relative overflow-hidden flex-shrink-0',
                   `border-2 ${borderColors[index]}`,
                   'hover:scale-105',
                   isSelected && 'ring-2 ring-white shadow-lg'
@@ -246,44 +246,47 @@ export function ReversalRisk({ positions, selectedToken, onSelectToken }: Props)
                   }}
                 />
 
-                {/* Content */}
-                <div className="relative flex flex-col items-center">
-                  <span className={clsx('font-pixel text-[8px] mb-1', rankColors[index])}>
+                {/* Content - spread vertically */}
+                <div className="relative flex flex-col items-center justify-between h-full w-full">
+                  {/* Top: Rank */}
+                  <span className={clsx('font-pixel text-[8px]', rankColors[index])}>
                     {rankLabels[index]}
                   </span>
 
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2"
-                    style={{ backgroundColor: `${token.color}30`, borderColor: token.color }}
-                  >
-                    {token.logoURI ? (
-                      <Image
-                        src={token.logoURI}
-                        alt={token.symbol}
-                        width={32}
-                        height={32}
-                        className="rounded-full"
-                        unoptimized
-                      />
-                    ) : (
-                      <span className="font-pixel text-xs" style={{ color: token.color }}>
-                        {token.symbol.slice(0, 2)}
-                      </span>
-                    )}
+                  {/* Middle: Logo + Symbol */}
+                  <div className="flex flex-col items-center flex-1 justify-center">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2"
+                      style={{ backgroundColor: `${token.color}30`, borderColor: token.color }}
+                    >
+                      {token.logoURI ? (
+                        <Image
+                          src={token.logoURI}
+                          alt={token.symbol}
+                          width={32}
+                          height={32}
+                          className="rounded-full"
+                          unoptimized
+                        />
+                      ) : (
+                        <span className="font-pixel text-xs" style={{ color: token.color }}>
+                          {token.symbol.slice(0, 2)}
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="font-pixel-body text-sm text-white mt-1 truncate max-w-full">
+                      {token.symbol}
+                    </span>
                   </div>
 
-                  <span className="font-pixel-body text-sm text-white mt-1 truncate max-w-full">
-                    {token.symbol}
-                  </span>
+                  {/* Bottom: Badge + Peak + Change */}
+                  <div className="flex flex-col items-center">
+                    <span className="font-pixel text-[6px] px-1.5 py-0.5 rounded bg-cfl-red/30 text-cfl-red">
+                      SHORT
+                    </span>
 
-                  {/* SHORT badge - these are reversal/short candidates */}
-                  <span className="font-pixel text-[6px] px-1.5 py-0.5 rounded mt-1 bg-cfl-red/30 text-cfl-red">
-                    SHORT
-                  </span>
-
-                  {/* Peak + Current change stacked */}
-                  <div className="flex flex-col items-center mt-0.5 w-full">
-                    <span className="font-pixel text-[6px] text-cfl-green whitespace-nowrap">
+                    <span className="font-pixel text-[6px] text-cfl-green whitespace-nowrap mt-0.5">
                       PEAK {token.peakPoint.toFixed(1)}%
                     </span>
                     <span className={clsx(
