@@ -9,11 +9,11 @@ export const metadata: Metadata = {
   keywords: ['CFL', 'Crypto Fantasy League', 'Solana', 'Seeker', 'volatility', 'trading'],
   authors: [{ name: 'CFL' }],
   manifest: '/manifest.json',
-  metadataBase: new URL('https://cfladv.fun'),
+  metadataBase: new URL('https://www.cfladv.fun'),
   openGraph: {
     title: 'CFL Advantage',
     description: 'Real-time volatility racing for Crypto Fantasy League tokens on Solana.',
-    url: 'https://cfladv.fun',
+    url: 'https://www.cfladv.fun',
     siteName: 'CFL Advantage',
     images: [
       {
