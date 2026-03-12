@@ -202,7 +202,7 @@ export function Dashboard() {
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
                 intervalMinutes={60}
-                topCount={3}
+                topCount={5}
               />
             </div>
 
@@ -255,7 +255,7 @@ export function Dashboard() {
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
                 intervalMinutes={60}
-                topCount={3}
+                topCount={5}
               />
             </div>
             <div className="min-h-[200px] card-pixel p-3">

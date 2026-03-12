@@ -179,21 +179,22 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
     );
   }
 
-  // For top 3 (hourly) - use big cards side by side
-  if (topCount === 3) {
-    const rankColors = ['border-cfl-gold', 'border-gray-400', 'border-amber-600'];
-    const rankLabels = ['1ST', '2ND', '3RD'];
+  const rankLabels = ['1ST', '2ND', '3RD', '4TH', '5TH'];
+  const rankColors = ['text-cfl-gold', 'text-gray-400', 'text-amber-600', 'text-cfl-text-muted', 'text-cfl-text-muted'];
+  const borderColors = ['border-cfl-gold', 'border-gray-400', 'border-amber-600', 'border-cfl-border', 'border-cfl-border'];
 
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
-            <span className="text-cfl-pink">★</span> {title} TOP MOVERS
-          </h2>
-          <span className="font-pixel-body text-[10px] text-cfl-pink">{timeRemaining}</span>
-        </div>
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
+          <span className="text-cfl-pink">★</span> {title} TOP MOVERS
+        </h2>
+        <span className="font-pixel-body text-[10px] text-cfl-pink">{timeRemaining}</span>
+      </div>
 
-        <div className="flex-1 flex gap-2 items-stretch">
+      {/* Horizontal scrollable cards */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+        <div className="flex gap-2 h-full min-w-max">
           {topMovers.map((mover, index) => {
             const isSelected = selectedToken === mover.mint;
             const absValue = Math.abs(mover.currentChange);
@@ -204,8 +205,8 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
                 key={mover.mint}
                 onClick={() => onSelectToken(isSelected ? null : mover.mint)}
                 className={clsx(
-                  'flex-1 flex flex-col items-center justify-end p-2 rounded-lg transition-all relative overflow-hidden',
-                  `border-2 ${rankColors[index]}`,
+                  'w-20 flex flex-col items-center p-2 rounded-lg transition-all relative overflow-hidden flex-shrink-0',
+                  `border-2 ${borderColors[index]}`,
                   'hover:scale-105',
                   isSelected && 'ring-2 ring-white shadow-lg'
                 )}
@@ -219,52 +220,51 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
                   }}
                 />
 
-                {/* Content */}
-                <div className="relative flex flex-col items-center">
-                  <span className={clsx(
-                    'font-pixel text-[8px] mb-1',
-                    index === 0 ? 'text-cfl-gold' : index === 1 ? 'text-gray-400' : 'text-amber-600'
-                  )}>
+                {/* Content - spread vertically */}
+                <div className="relative flex flex-col items-center justify-between h-full w-full">
+                  {/* Top: Rank */}
+                  <span className={clsx('font-pixel text-[8px]', rankColors[index])}>
                     {rankLabels[index]}
                   </span>
 
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2"
-                    style={{ backgroundColor: `${mover.color}30`, borderColor: mover.color }}
-                  >
-                    {mover.logoURI ? (
-                      <Image
-                        src={mover.logoURI}
-                        alt={mover.symbol}
-                        width={32}
-                        height={32}
-                        className="rounded-full"
-                        unoptimized
-                      />
-                    ) : (
-                      <span className="font-pixel text-xs" style={{ color: mover.color }}>
-                        {mover.symbol.slice(0, 2)}
-                      </span>
-                    )}
+                  {/* Middle: Logo + Symbol */}
+                  <div className="flex flex-col items-center flex-1 justify-center">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2"
+                      style={{ backgroundColor: `${mover.color}30`, borderColor: mover.color }}
+                    >
+                      {mover.logoURI ? (
+                        <Image
+                          src={mover.logoURI}
+                          alt={mover.symbol}
+                          width={32}
+                          height={32}
+                          className="rounded-full"
+                          unoptimized
+                        />
+                      ) : (
+                        <span className="font-pixel text-xs" style={{ color: mover.color }}>
+                          {mover.symbol.slice(0, 2)}
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="font-pixel-body text-sm text-white mt-1 truncate max-w-full">
+                      {mover.symbol}
+                    </span>
                   </div>
 
-                  <span className="font-pixel-body text-sm text-white mt-1 truncate max-w-full">
-                    {mover.symbol}
-                  </span>
-
-                  <span className={clsx(
-                    'font-pixel text-[6px] px-1.5 py-0.5 rounded mt-1',
-                    mover.direction === 'long'
-                      ? 'bg-cfl-green/30 text-cfl-green'
-                      : 'bg-cfl-red/30 text-cfl-red'
-                  )}>
-                    {mover.direction === 'long' ? 'LONG' : 'SHORT'}
-                  </span>
-
-                  {/* Current change + max volatility - always stacked */}
-                  <div className="flex flex-col items-center mt-0.5 w-full">
+                  {/* Bottom: Badge + Change + Max */}
+                  <div className="flex flex-col items-center">
                     <span className={clsx(
-                      'font-pixel text-[8px] whitespace-nowrap',
+                      'font-pixel text-[6px] px-1.5 py-0.5 rounded',
+                      mover.direction === 'long' ? 'bg-cfl-green/30 text-cfl-green' : 'bg-cfl-red/30 text-cfl-red'
+                    )}>
+                      {mover.direction === 'long' ? 'LONG' : 'SHORT'}
+                    </span>
+
+                    <span className={clsx(
+                      'font-pixel text-[8px] whitespace-nowrap mt-0.5',
                       mover.currentChange >= 0 ? 'text-cfl-green' : 'text-cfl-red'
                     )}>
                       {mover.currentChange >= 0 ? '+' : ''}{mover.currentChange.toFixed(2)}%
@@ -277,113 +277,7 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
               </button>
             );
           })}
-
-          {[...Array(3 - topMovers.length)].map((_, i) => (
-            <div
-              key={`empty-${i}`}
-              className="flex-1 flex flex-col items-center justify-center p-2 rounded-lg border-2 border-cfl-border/30 bg-cfl-bg/30"
-            >
-              <span className="font-pixel text-[8px] text-cfl-text-muted">—</span>
-            </div>
-          ))}
         </div>
-      </div>
-    );
-  }
-
-  // For top 5 - use compact list
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="font-pixel text-[8px] text-white flex items-center gap-1.5">
-          <span className="text-cfl-pink">★</span> {title} TOP MOVERS
-        </h2>
-        <span className="font-pixel-body text-[10px] text-cfl-pink">{timeRemaining}</span>
-      </div>
-
-      <div className="flex-1 flex flex-col gap-1 overflow-hidden">
-        {topMovers.map((mover, index) => {
-          const isSelected = selectedToken === mover.mint;
-          const absValue = Math.abs(mover.currentChange);
-          const barWidth = Math.min((absValue / 3) * 100, 100); // Max at 3%
-
-          return (
-            <button
-              key={mover.mint}
-              onClick={() => onSelectToken(isSelected ? null : mover.mint)}
-              className={clsx(
-                'flex items-center gap-2 px-2 py-1 rounded transition-all relative overflow-hidden',
-                'border bg-cfl-bg/50 hover:bg-cfl-border/30',
-                index === 0 ? 'border-cfl-gold/50' : 'border-cfl-border/50',
-                isSelected && 'ring-1 ring-cfl-pink'
-              )}
-            >
-              {/* Progress bar */}
-              <div
-                className="absolute left-0 top-0 bottom-0 transition-all duration-500"
-                style={{
-                  width: `${barWidth}%`,
-                  backgroundColor: mover.direction === 'long' ? 'rgba(34, 197, 94, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-                }}
-              />
-
-              {/* Content */}
-              <div className="relative flex items-center gap-2 w-full">
-                {/* Rank */}
-                <span className={clsx(
-                  'font-pixel text-[8px] w-4',
-                  index === 0 ? 'text-cfl-gold' : 'text-cfl-text-muted'
-                )}>
-                  {index + 1}
-                </span>
-
-                {/* Logo */}
-                <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-                  style={{ backgroundColor: `${mover.color}30` }}
-                >
-                  {mover.logoURI ? (
-                    <Image
-                      src={mover.logoURI}
-                      alt={mover.symbol}
-                      width={16}
-                      height={16}
-                      className="rounded-full"
-                      unoptimized
-                    />
-                  ) : (
-                    <span className="font-pixel text-[6px]" style={{ color: mover.color }}>
-                      {mover.symbol.slice(0, 2)}
-                    </span>
-                  )}
-                </div>
-
-                {/* Symbol */}
-                <span className="font-pixel-body text-xs text-white flex-1 text-left truncate">
-                  {mover.symbol}
-                </span>
-
-                {/* Direction */}
-                <span className={clsx(
-                  'font-pixel text-[6px] px-1 rounded',
-                  mover.direction === 'long'
-                    ? 'bg-cfl-green/30 text-cfl-green'
-                    : 'bg-cfl-red/30 text-cfl-red'
-                )}>
-                  {mover.direction === 'long' ? 'L' : 'S'}
-                </span>
-
-                {/* Current % */}
-                <span className={clsx(
-                  'font-pixel text-[8px] w-12 text-right',
-                  mover.currentChange >= 0 ? 'text-cfl-green' : 'text-cfl-red'
-                )}>
-                  {mover.currentChange >= 0 ? '+' : ''}{mover.currentChange.toFixed(2)}%
-                </span>
-              </div>
-            </button>
-          );
-        })}
       </div>
     </div>
   );
