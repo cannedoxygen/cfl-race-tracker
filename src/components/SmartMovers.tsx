@@ -51,6 +51,15 @@ const INFO_DETAILS: Record<MetricType, string> = {
   trending: 'Tokens moving consistently in one direction over 5 minutes. Less choppy, more predictable.',
 };
 
+// Noisy tokens - low liquidity causes oracle price oscillation without real trades
+const NOISY_TOKENS: Record<string, number> = {
+  'babydoge': 0.3,  // 70% reduction - oracle noise without real volume
+};
+
+const getNoiseDampener = (symbol: string): number => {
+  return NOISY_TOKENS[symbol.toLowerCase()] ?? 1.0;
+};
+
 export function SmartMovers({ positions, selectedToken, onSelectToken, metric }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
   const [showInfo, setShowInfo] = useState(false);
@@ -160,6 +169,9 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
           }
           break;
       }
+
+      // Apply noise dampening for known noisy tokens
+      score *= getNoiseDampener(pos.symbol);
 
       return { pos, score };
     });

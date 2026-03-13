@@ -34,6 +34,17 @@ interface TokenHistory {
 const DECAY_RATE = 0.02; // 2% per second
 const MAX_HISTORY = 150;
 
+// Noisy tokens - low liquidity causes oracle price oscillation without real trades
+// These get a dampening factor applied to their volatility score
+const NOISY_TOKENS: Record<string, number> = {
+  'babydoge': 0.3,  // 70% reduction - oracle noise without real volume
+};
+
+const getNoiseDampener = (symbol: string): number => {
+  const lower = symbol.toLowerCase();
+  return NOISY_TOKENS[lower] ?? 1.0; // Default: no dampening
+};
+
 export function TopMovers({ positions, selectedToken, onSelectToken, intervalMinutes, topCount }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
   const historyRef = useRef<Map<string, TokenHistory>>(new Map());
@@ -122,6 +133,10 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
       const timeSinceUpdate = now - history.lastUpdate;
       const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
       score *= decayFactor;
+
+      // Apply noise dampening for known noisy tokens
+      const noiseDampener = getNoiseDampener(pos.symbol);
+      score *= noiseDampener;
 
       return { pos, score, maxMove: history.maxMove };
     });
