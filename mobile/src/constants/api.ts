@@ -1,7 +1,7 @@
 // API Configuration for CFL Mobile App
 // Your web app is deployed on Vercel
 
-export const API_BASE = 'https://cfladvantage.vercel.app/api';
+export const API_BASE = 'https://www.cfladv.fun/api';
 
 // Direct CFL backend endpoints (Railway)
 export const CFL_BACKEND = 'https://v12-cfl-backend-production.up.railway.app';
