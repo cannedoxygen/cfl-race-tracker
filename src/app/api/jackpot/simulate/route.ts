@@ -18,13 +18,31 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get all eligible users
-    const { data: allUsers } = await supabase
-      .from('users')
-      .select('wallet_address, subscription_count')
-      .gt('subscription_count', 0);
+    // Get subscriptions from THIS WEEK only (same logic as pickWinner)
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay();
+    const weekStart = new Date(now);
+    weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+    weekStart.setUTCHours(0, 0, 0, 0);
+    const weekStartISO = weekStart.toISOString();
 
-    const totalTickets = allUsers?.reduce((sum, u) => sum + u.subscription_count, 0) ?? 0;
+    const { data: subscriptions } = await supabase
+      .from('subscriptions')
+      .select('wallet_address')
+      .gte('created_at', weekStartISO);
+
+    // Count tickets per wallet
+    const ticketCounts: Record<string, number> = {};
+    for (const sub of subscriptions || []) {
+      ticketCounts[sub.wallet_address] = (ticketCounts[sub.wallet_address] || 0) + 1;
+    }
+
+    const allUsers = Object.entries(ticketCounts).map(([wallet, count]) => ({
+      wallet_address: wallet,
+      subscription_count: count,
+    }));
+
+    const totalTickets = subscriptions?.length ?? 0;
     const payoutAmount = totalTickets * JACKPOT_PER_TICKET_LAMPORTS;
 
     // Get on-chain balance

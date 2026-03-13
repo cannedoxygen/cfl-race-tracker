@@ -48,16 +48,42 @@ export async function getJackpotBalance(): Promise<number> {
   return balance;
 }
 
-// Pick a random winner weighted by ticket count
+// Pick a random winner weighted by ticket count (THIS WEEK ONLY)
 export async function pickWinner(): Promise<JackpotUser | null> {
-  const { data: users, error } = await supabase
-    .from('users')
-    .select('wallet_address, subscription_count')
-    .gt('subscription_count', 0);
+  // Get start of current week (Sunday 00:00 UTC)
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay();
+  const weekStart = new Date(now);
+  weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+  weekStart.setUTCHours(0, 0, 0, 0);
+  const weekStartISO = weekStart.toISOString();
 
-  if (error || !users || users.length === 0) {
+  console.log('Jackpot pickWinner: Looking for subscriptions since', weekStartISO);
+
+  // Count subscriptions per wallet from THIS WEEK only
+  const { data: subscriptions, error } = await supabase
+    .from('subscriptions')
+    .select('wallet_address')
+    .gte('created_at', weekStartISO);
+
+  if (error || !subscriptions || subscriptions.length === 0) {
+    console.log('Jackpot pickWinner: No subscriptions found for this week');
     return null;
   }
+
+  // Count tickets per wallet
+  const ticketCounts: Record<string, number> = {};
+  for (const sub of subscriptions) {
+    ticketCounts[sub.wallet_address] = (ticketCounts[sub.wallet_address] || 0) + 1;
+  }
+
+  // Convert to array for selection
+  const users: JackpotUser[] = Object.entries(ticketCounts).map(([wallet, count]) => ({
+    wallet_address: wallet,
+    subscription_count: count,
+  }));
+
+  console.log('Jackpot pickWinner: Found', users.length, 'eligible wallets with', subscriptions.length, 'total tickets this week');
 
   // Weighted random: more tickets = higher chance
   const totalTickets = users.reduce((sum, u) => sum + u.subscription_count, 0);
@@ -203,12 +229,19 @@ export async function performJackpotDraw(): Promise<DrawingResult> {
     return { success: false, message: 'No eligible users found' };
   }
 
-  // Get total tickets for stats
-  const { data: allUsers } = await supabase
-    .from('users')
-    .select('subscription_count')
-    .gt('subscription_count', 0);
-  const totalTickets = allUsers?.reduce((sum, u) => sum + u.subscription_count, 0) ?? 0;
+  // Get total tickets for stats (THIS WEEK ONLY)
+  const now = new Date();
+  const dayOfWeek = now.getUTCDay();
+  const weekStart = new Date(now);
+  weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+  weekStart.setUTCHours(0, 0, 0, 0);
+  const weekStartISO = weekStart.toISOString();
+
+  const { data: weekSubs } = await supabase
+    .from('subscriptions')
+    .select('wallet_address')
+    .gte('created_at', weekStartISO);
+  const totalTickets = weekSubs?.length ?? 0;
 
   // Get on-chain balance - this is the source of truth
   let balance: number;

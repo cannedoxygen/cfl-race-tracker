@@ -24,19 +24,39 @@ export async function GET() {
       console.error('Failed to fetch on-chain balance:', rpcError);
     }
 
-    // Get ALL users with tickets (no limit) so totals are accurate
-    let { data: usersData, error: usersError } = await supabase
-      .from('users')
-      .select('wallet_address, subscription_count')
-      .gt('subscription_count', 0)
-      .order('subscription_count', { ascending: false });
+    // Get subscriptions from THIS WEEK only
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay();
+    const weekStart = new Date(now);
+    weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+    weekStart.setUTCHours(0, 0, 0, 0);
+    const weekStartISO = weekStart.toISOString();
 
-    if (usersError) {
-      console.error('Failed to fetch users:', usersError);
+    const { data: subscriptions, error: subsError } = await supabase
+      .from('subscriptions')
+      .select('wallet_address')
+      .gte('created_at', weekStartISO);
+
+    if (subsError) {
+      console.error('Failed to fetch subscriptions:', subsError);
     }
 
-    // Note: After a jackpot drawing, user tickets reset to 0
-    // We only show users with actual current tickets, not historical subscriptions
+    // Count tickets per wallet for this week
+    const ticketCounts: Record<string, number> = {};
+    for (const sub of subscriptions || []) {
+      ticketCounts[sub.wallet_address] = (ticketCounts[sub.wallet_address] || 0) + 1;
+    }
+
+    // Convert to array sorted by ticket count
+    const usersData = Object.entries(ticketCounts)
+      .map(([wallet, count]) => ({
+        wallet_address: wallet,
+        subscription_count: count,
+      }))
+      .sort((a, b) => b.subscription_count - a.subscription_count);
+
+    // Note: Now using subscriptions table with created_at filter
+    // Only shows users who purchased THIS WEEK, not stale subscription_count
 
     console.log('Jackpot API response:', {
       onChainBalance,

@@ -9,7 +9,7 @@ import { SubscriptionModal } from './SubscriptionModal';
 type Tab = 'race' | 'jackpot' | 'referral';
 const REFERRAL_CODE = 'LPG8Y6L';
 const TIP_USERNAME = '8bit.skr';
-const TWITTER_CANNED = 'cannedoxygen83';
+const TWITTER_CANNED = 'canned_oxygen';
 const TWITTER_MICROPERPS = 'microperps';
 
 interface Props {
