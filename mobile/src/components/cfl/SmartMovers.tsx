@@ -54,6 +54,15 @@ const RANK_LABELS = ['1ST', '2ND', '3RD', '4TH', '5TH'];
 const RANK_COLORS = [COLORS.pink, '#9CA3AF', '#D97706', COLORS.textMuted, COLORS.textMuted];
 const BORDER_COLORS = [COLORS.pink, '#9CA3AF', '#D97706', COLORS.border, COLORS.border];
 
+// Noisy tokens - low liquidity causes oracle price oscillation without real trades
+const NOISY_TOKENS: Record<string, number> = {
+  'babydoge': 0.3,  // 70% reduction - oracle noise without real volume
+};
+
+const getNoiseDampener = (symbol: string): number => {
+  return NOISY_TOKENS[symbol.toLowerCase()] ?? 1.0;
+};
+
 export function SmartMovers({ positions, selectedToken, onSelectToken, metric }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
   const [showInfo, setShowInfo] = useState(false);
@@ -147,6 +156,9 @@ export function SmartMovers({ positions, selectedToken, onSelectToken, metric }:
           }
           break;
       }
+
+      // Apply noise dampening for known noisy tokens
+      score *= getNoiseDampener(pos.symbol);
 
       return { pos, score };
     });

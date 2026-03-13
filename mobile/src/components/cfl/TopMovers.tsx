@@ -34,6 +34,15 @@ const RANK_LABELS = ['1ST', '2ND', '3RD', '4TH', '5TH'];
 const RANK_COLORS = [COLORS.gold, '#9CA3AF', '#D97706', COLORS.textMuted, COLORS.textMuted];
 const BORDER_COLORS = [COLORS.gold, '#9CA3AF', '#D97706', COLORS.border, COLORS.border];
 
+// Noisy tokens - low liquidity causes oracle price oscillation without real trades
+const NOISY_TOKENS: Record<string, number> = {
+  'babydoge': 0.3,  // 70% reduction - oracle noise without real volume
+};
+
+const getNoiseDampener = (symbol: string): number => {
+  return NOISY_TOKENS[symbol.toLowerCase()] ?? 1.0;
+};
+
 export function TopMovers({ positions, selectedToken, onSelectToken, intervalMinutes, topCount }: Props) {
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
   const [timeRemaining, setTimeRemaining] = useState('60:00');
@@ -85,7 +94,10 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
 
     const sortedMovers: { mint: string; volatility: number }[] = [];
     volatilityAccumulator.current.forEach((data, mint) => {
-      sortedMovers.push({ mint, volatility: data.volatility });
+      // Apply noise dampener for known noisy tokens
+      const pos = positions.find(p => p.mint === mint);
+      const dampener = pos ? getNoiseDampener(pos.symbol) : 1.0;
+      sortedMovers.push({ mint, volatility: data.volatility * dampener });
     });
     sortedMovers.sort((a, b) => b.volatility - a.volatility);
 
