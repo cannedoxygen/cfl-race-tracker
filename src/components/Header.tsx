@@ -5,6 +5,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useRaceStore } from '@/store/raceStore';
 import clsx from 'clsx';
 import { SubscriptionModal } from './SubscriptionModal';
+import { SubscriptionTimer } from './SubscriptionTimer';
 
 type Tab = 'race' | 'jackpot' | 'referral';
 const REFERRAL_CODE = 'LPG8Y6L';
@@ -144,11 +145,14 @@ export function Header({ activeTab, onTabChange }: Props) {
   return (
     <>
     <header className="flex items-center justify-between px-2 md:px-3 py-2 border-b-2 border-cfl-border flex-shrink-0 bg-cfl-card gap-2 overflow-x-hidden">
-      {/* Left: Logo */}
-      <h1 className="font-pixel text-[10px] md:text-[12px] tracking-wide flex-shrink-0">
-        <span className="text-cfl-gold">CFL</span>
-        <span className="text-cfl-teal">ADV</span>
-      </h1>
+      {/* Left: Logo + Subscription Timer */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <h1 className="font-pixel text-[10px] md:text-[12px] tracking-wide">
+          <span className="text-cfl-gold">CFL</span>
+          <span className="text-cfl-teal">ADV</span>
+        </h1>
+        <SubscriptionTimer />
+      </div>
 
       {/* Center: Race Controls (only on race tab) */}
       {activeTab === 'race' && (
