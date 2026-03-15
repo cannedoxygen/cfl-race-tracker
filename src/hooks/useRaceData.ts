@@ -67,9 +67,10 @@ export function useRaceData() {
     return tokens;
   }, []);
 
-  // Initialize positions on mount - fetch tokens first like mobile app does
+  // Initialize positions when wallet is available - fetch tokens with wallet for auth
   useEffect(() => {
     async function loadTokens() {
+      if (!walletAddress) return; // Wait for wallet to be connected
       const tokens = await loadTokenList();
       if (tokens.length > 0) {
         initializePositions(tokens);
@@ -77,7 +78,7 @@ export function useRaceData() {
       }
     }
     loadTokens();
-  }, [initializePositions, buildTokenLookup]);
+  }, [initializePositions, buildTokenLookup, walletAddress]);
 
   // ============================================
   // SSE Mode: Handle price updates from CFL SSE

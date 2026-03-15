@@ -230,9 +230,5 @@ export async function loadTokenList(track?: TrackType | 'all'): Promise<Token[]>
 export const DEFAULT_TOKENS = tokenCache;
 export const CFL_TOKENS = tokenCache;
 
-// Trigger initial API fetch on module load (non-blocking)
-// This runs immediately to pre-populate the cache
-if (typeof window !== 'undefined') {
-  // Client-side: start fetching tokens immediately
-  refreshTokens().catch(console.error);
-}
+// NOTE: Don't auto-fetch on module load - wait for wallet to be connected
+// The useRaceData hook will call refreshTokens() after wallet is available
