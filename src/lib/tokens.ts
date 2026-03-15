@@ -63,9 +63,23 @@ let isInitialized = false;
 let initPromise: Promise<Token[]> | null = null;
 const CACHE_TTL = 2 * 60 * 1000; // 2 minutes - shorter to pick up new tokens faster
 
+// Store wallet address for authenticated API calls
+let currentWallet: string | null = null;
+
+export function setCurrentWallet(wallet: string | null) {
+  currentWallet = wallet;
+}
+
+export function getCurrentWallet(): string | null {
+  return currentWallet;
+}
+
 // Fetch fresh tokens from API - always fetches, no static fallback
-export async function refreshTokens(force = false): Promise<Token[]> {
+export async function refreshTokens(force = false, wallet?: string): Promise<Token[]> {
   const now = Date.now();
+
+  // Use provided wallet or fall back to stored wallet
+  const walletAddress = wallet || currentWallet;
 
   // Skip if recently fetched (unless forced)
   if (!force && tokenCache.length > 0 && (now - lastFetchTime) < CACHE_TTL) {
@@ -84,7 +98,9 @@ export async function refreshTokens(force = false): Promise<Token[]> {
         ? process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
         : '';
 
-      const response = await fetch(`${baseUrl}/api/tokens`, {
+      // Include wallet param for authentication
+      const walletParam = walletAddress ? `?wallet=${walletAddress}` : '';
+      const response = await fetch(`${baseUrl}/api/tokens${walletParam}`, {
         cache: 'no-store',
       });
 

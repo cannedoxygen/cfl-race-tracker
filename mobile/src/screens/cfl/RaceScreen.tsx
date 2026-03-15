@@ -31,7 +31,7 @@ export function RaceScreen() {
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  const { hasAccess } = useWalletStore();
+  const { hasAccess, address: walletAddress } = useWalletStore();
 
   const {
     status,
@@ -62,12 +62,13 @@ export function RaceScreen() {
     startRace();
   };
 
-  // Initialize tokens on mount
+  // Initialize tokens on mount (requires wallet for subscription check)
   useEffect(() => {
     async function loadTokens() {
+      if (!walletAddress) return; // Wait for wallet to be connected
       setIsLoading(true);
       try {
-        const tokens = await fetchTokens();
+        const tokens = await fetchTokens(walletAddress);
         if (tokens.length > 0) {
           initializePositions(tokens);
         }
@@ -77,15 +78,15 @@ export function RaceScreen() {
       setIsLoading(false);
     }
     loadTokens();
-  }, []);
+  }, [walletAddress]);
 
-  // Poll prices when racing
+  // Poll prices when racing (requires wallet for subscription check)
   useEffect(() => {
-    if (status !== 'racing') return;
+    if (status !== 'racing' || !walletAddress) return;
 
     const pollPrices = async () => {
       try {
-        const data = await fetchRacePrices();
+        const data = await fetchRacePrices(undefined, undefined, walletAddress);
         if (data?.prices) {
           const updates = data.prices.map(p => ({
             mint: p.mint,
@@ -106,7 +107,7 @@ export function RaceScreen() {
     pollPrices();
     const interval = setInterval(pollPrices, 2000);
     return () => clearInterval(interval);
-  }, [status]);
+  }, [status, walletAddress]);
 
   // Update elapsed time every second
   useEffect(() => {
@@ -117,9 +118,10 @@ export function RaceScreen() {
 
   // Pull to refresh
   const onRefresh = useCallback(async () => {
+    if (!walletAddress) return;
     setRefreshing(true);
     try {
-      const tokens = await fetchTokens();
+      const tokens = await fetchTokens(walletAddress);
       if (tokens.length > 0) {
         initializePositions(tokens);
       }
@@ -127,7 +129,7 @@ export function RaceScreen() {
       console.error('Refresh failed:', err);
     }
     setRefreshing(false);
-  }, []);
+  }, [walletAddress]);
 
   // Convert positions map to sorted array
   const sortedPositions = Array.from(positions.values())

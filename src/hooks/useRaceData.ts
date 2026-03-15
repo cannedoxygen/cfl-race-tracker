@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { useRaceStore } from '@/store/raceStore';
 import { Token } from '@/types';
-import { getTokens, loadTokenList } from '@/lib/tokens';
+import { getTokens, loadTokenList, setCurrentWallet } from '@/lib/tokens';
 import { getCFLPriceSSE, ParsedPrice } from '@/lib/cflPriceSSE';
 import { PRICE_CONFIG, isCflSSEEnabled } from '@/lib/priceConfig';
 
@@ -17,6 +18,9 @@ interface PriceUpdate {
 }
 
 export function useRaceData() {
+  const { publicKey } = useWallet();
+  const walletAddress = publicKey?.toBase58() || null;
+
   const {
     status,
     startTime,
@@ -39,6 +43,11 @@ export function useRaceData() {
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const raceStartTimeRef = useRef<number | null>(null);
+
+  // Update global wallet state for token API calls
+  useEffect(() => {
+    setCurrentWallet(walletAddress);
+  }, [walletAddress]);
 
   // SSE-specific refs
   const startPricesRef = useRef<Map<string, number>>(new Map());
@@ -116,7 +125,8 @@ export function useRaceData() {
     if (status !== 'racing' || !raceStartTimeRef.current) return;
 
     try {
-      const response = await fetch(`/api/race-prices?startTime=${raceStartTimeRef.current}`);
+      const walletParam = walletAddress ? `&wallet=${walletAddress}` : '';
+      const response = await fetch(`/api/race-prices?startTime=${raceStartTimeRef.current}${walletParam}`);
 
       if (!response.ok) return;
 
@@ -128,7 +138,7 @@ export function useRaceData() {
     } catch (error) {
       console.error('Error fetching prices:', error);
     }
-  }, [status, updatePrices]);
+  }, [status, updatePrices, walletAddress]);
 
   // ============================================
   // Start Race
@@ -159,14 +169,15 @@ export function useRaceData() {
       console.log('[Race] Starting with Pyth polling mode');
 
       try {
-        await fetch(`/api/race-prices?action=start&startTime=${now}`);
+        const walletParam = walletAddress ? `&wallet=${walletAddress}` : '';
+        await fetch(`/api/race-prices?action=start&startTime=${now}${walletParam}`);
       } catch (error) {
         console.error('Failed to start race in API:', error);
       }
     }
 
     storeStartRace();
-  }, [storeStartRace, buildTokenLookup, handleSSEPriceUpdate]);
+  }, [storeStartRace, buildTokenLookup, handleSSEPriceUpdate, walletAddress]);
 
   // ============================================
   // Reset Race
@@ -187,14 +198,15 @@ export function useRaceData() {
     } else {
       // Polling Mode: Reset API state
       try {
-        await fetch('/api/race-prices?action=reset');
+        const walletParam = walletAddress ? `&wallet=${walletAddress}` : '';
+        await fetch(`/api/race-prices?action=reset${walletParam}`);
       } catch (error) {
         console.error('Failed to reset race in API:', error);
       }
     }
 
     storeResetRace();
-  }, [storeResetRace]);
+  }, [storeResetRace, walletAddress]);
 
   // ============================================
   // Manage polling/timer based on race status

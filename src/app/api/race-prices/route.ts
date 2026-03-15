@@ -1,7 +1,28 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { isVipWallet } from '@/lib/wallet';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+// Check if wallet has active subscription
+async function checkWalletAccess(walletAddress: string | null): Promise<boolean> {
+  if (!walletAddress) return false;
+
+  // VIP wallets have free access
+  if (isVipWallet(walletAddress)) return true;
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('expires_at')
+    .eq('wallet_address', walletAddress)
+    .gt('expires_at', now)
+    .limit(1)
+    .single();
+
+  return !error && !!data;
+}
 
 // Pyth Hermes endpoints
 const PYTH_HERMES_URL = 'https://hermes.pyth.network/v2/updates/price/latest';
@@ -166,6 +187,16 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const action = searchParams.get('action');
   const startTimeParam = searchParams.get('startTime');
+  const wallet = searchParams.get('wallet');
+
+  // Check subscription before returning price data
+  const hasAccess = await checkWalletAccess(wallet);
+  if (!hasAccess) {
+    return NextResponse.json(
+      { error: 'Subscription required', code: 'NO_SUBSCRIPTION' },
+      { status: 403 }
+    );
+  }
 
   try {
     // Fetch Pyth feed mapping and CFL tokens in parallel

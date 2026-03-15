@@ -1,7 +1,28 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { isVipWallet } from '@/lib/wallet';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+// Check if wallet has active subscription
+async function checkWalletAccess(walletAddress: string | null): Promise<boolean> {
+  if (!walletAddress) return false;
+
+  // VIP wallets have free access
+  if (isVipWallet(walletAddress)) return true;
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('expires_at')
+    .eq('wallet_address', walletAddress)
+    .gt('expires_at', now)
+    .limit(1)
+    .single();
+
+  return !error && !!data;
+}
 
 const CFL_TOKEN_API = 'https://v12-cfl-backend-production.up.railway.app/token/list?page=1&limit=500';
 
@@ -53,7 +74,19 @@ async function fetchTokensFromAPI(): Promise<any[]> {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const wallet = searchParams.get('wallet');
+
+  // Check subscription before returning token data
+  const hasAccess = await checkWalletAccess(wallet);
+  if (!hasAccess) {
+    return NextResponse.json(
+      { success: false, error: 'Subscription required', code: 'NO_SUBSCRIPTION', data: [] },
+      { status: 403 }
+    );
+  }
+
   try {
     const allTokens = await fetchTokensFromAPI();
 

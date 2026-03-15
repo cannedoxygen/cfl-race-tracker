@@ -127,24 +127,14 @@ export function PaywallGate({ children }: Props) {
 
     // Check if Mobile Wallet Adapter is available
     if (!hasMobileWallet || !transact) {
-      // In Expo Go / dev mode without native modules, show demo mode option
+      // Mobile Wallet Adapter not available - user needs dev client build
       Alert.alert(
-        'Dev Client Required',
-        'Mobile Wallet Adapter requires a custom dev client build. Would you like to continue in demo mode?',
+        'Wallet Required',
+        'This app requires a Solana wallet. Please install Phantom, Solflare, or another Solana wallet app, then use the CFL Advantage dev client build.',
         [
           {
-            text: 'Cancel',
+            text: 'OK',
             onPress: () => setState('connect'),
-            style: 'cancel',
-          },
-          {
-            text: 'Demo Mode',
-            onPress: () => {
-              // Grant temporary access for testing
-              setWallet('demo-wallet');
-              setSubscription(new Date(Date.now() + 24 * 60 * 60 * 1000), false);
-              setState('active');
-            },
           },
         ]
       );
@@ -204,10 +194,14 @@ export function PaywallGate({ children }: Props) {
       return;
     }
 
-    // Demo mode - skip actual payment
-    if (walletAddress === 'demo-wallet' || !hasMobileWallet) {
-      setSubscription(new Date(Date.now() + 24 * 60 * 60 * 1000), false);
-      setState('active');
+    // Require Mobile Wallet Adapter for payments
+    if (!hasMobileWallet || !transact) {
+      Alert.alert(
+        'Wallet Required',
+        'Payment requires a Solana wallet. Please use the CFL Advantage dev client build with a wallet app installed.',
+        [{ text: 'OK' }]
+      );
+      setState('pay');
       return;
     }
 

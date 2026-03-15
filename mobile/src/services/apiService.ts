@@ -49,10 +49,11 @@ interface JackpotResponse {
   };
 }
 
-// Fetch tokens from CFL API
-export async function fetchTokens(): Promise<Token[]> {
+// Fetch tokens from CFL API (requires wallet for subscription check)
+export async function fetchTokens(wallet?: string): Promise<Token[]> {
   try {
-    const response = await fetch(API_ENDPOINTS.tokens);
+    const walletParam = wallet ? `?wallet=${wallet}` : '';
+    const response = await fetch(`${API_ENDPOINTS.tokens}${walletParam}`);
     if (!response.ok) throw new Error('Failed to fetch tokens');
 
     const data: TokensResponse = await response.json();
@@ -90,16 +91,22 @@ function getTrackFromBoost(boost: number): 'aggressive' | 'balanced' | 'moderate
   return 'conservative';
 }
 
-// Fetch race prices
-export async function fetchRacePrices(action?: 'start' | 'reset', startTime?: number): Promise<RacePricesResponse | null> {
+// Fetch race prices (requires wallet for subscription check)
+export async function fetchRacePrices(action?: 'start' | 'reset', startTime?: number, wallet?: string): Promise<RacePricesResponse | null> {
   try {
     let url = API_ENDPOINTS.racePrices;
+    const params = new URLSearchParams();
 
+    if (wallet) params.set('wallet', wallet);
     if (action === 'start' && startTime) {
-      url += `?action=start&startTime=${startTime}`;
+      params.set('action', 'start');
+      params.set('startTime', startTime.toString());
     } else if (action === 'reset') {
-      url += '?action=reset';
+      params.set('action', 'reset');
     }
+
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
 
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch prices');
