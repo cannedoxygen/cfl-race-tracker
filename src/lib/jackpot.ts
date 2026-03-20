@@ -48,23 +48,31 @@ export async function getJackpotBalance(): Promise<number> {
   return balance;
 }
 
-// Pick a random winner weighted by ticket count (THIS WEEK ONLY)
+// Pick a random winner weighted by ticket count (entries since last drawing)
 export async function pickWinner(): Promise<JackpotUser | null> {
-  // Get start of current week (Sunday 00:00 UTC)
-  const now = new Date();
-  const dayOfWeek = now.getUTCDay();
-  const weekStart = new Date(now);
-  weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
-  weekStart.setUTCHours(0, 0, 0, 0);
-  const weekStartISO = weekStart.toISOString();
+  // Get the most recent drawing to find entries created AFTER it
+  const recentDrawing = await getRecentDrawing();
+  let entryCutoff: string;
 
-  console.log('Jackpot pickWinner: Looking for subscriptions since', weekStartISO);
+  if (recentDrawing?.drawnAt) {
+    entryCutoff = new Date(recentDrawing.drawnAt).toISOString();
+    console.log('Jackpot pickWinner: Looking for subscriptions since last drawing:', entryCutoff);
+  } else {
+    // No previous drawing, use week start as fallback
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay();
+    const weekStart = new Date(now);
+    weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+    weekStart.setUTCHours(0, 0, 0, 0);
+    entryCutoff = weekStart.toISOString();
+    console.log('Jackpot pickWinner: No previous drawing, using week start:', entryCutoff);
+  }
 
-  // Count subscriptions per wallet from THIS WEEK only
+  // Count subscriptions per wallet since last drawing
   const { data: subscriptions, error } = await supabase
     .from('subscriptions')
     .select('wallet_address')
-    .gte('created_at', weekStartISO);
+    .gt('created_at', entryCutoff);
 
   if (error || !subscriptions || subscriptions.length === 0) {
     console.log('Jackpot pickWinner: No subscriptions found for this week');
@@ -139,8 +147,7 @@ export async function recordDrawing(
     txSignature,
   });
 
-  // Use insert instead of upsert - we already check for existing drawings in performJackpotDraw
-  // upsert with onConflict requires a unique constraint which may not exist
+  // Try insert first
   const { data, error } = await supabase
     .from('jackpot_drawings')
     .insert({
@@ -157,6 +164,32 @@ export async function recordDrawing(
 
   if (error) {
     console.error('Failed to record jackpot drawing:', JSON.stringify(error));
+
+    // If it's a duplicate key error, try to update instead
+    if (error.code === '23505') {
+      console.log('Drawing already exists, updating...');
+      const { data: updateData, error: updateError } = await supabase
+        .from('jackpot_drawings')
+        .update({
+          winner_wallet: winnerWallet,
+          winner_tickets: winnerTickets,
+          total_tickets: totalTickets,
+          prize_lamports: prizeLamports,
+          prize_sol: prizeLamports / LAMPORTS_PER_SOL,
+          tx_signature: txSignature,
+          status: txSignature ? 'paid' : 'failed',
+        })
+        .eq('week_id', weekId)
+        .select();
+
+      if (updateError) {
+        console.error('Failed to update jackpot drawing:', JSON.stringify(updateError));
+        return { success: false, error: `Supabase update error: ${updateError.message}` };
+      }
+      console.log('Jackpot drawing updated successfully:', updateData);
+      return { success: true };
+    }
+
     return { success: false, error: `Supabase error: ${error.message} (code: ${error.code})` };
   }
 
@@ -229,18 +262,25 @@ export async function performJackpotDraw(): Promise<DrawingResult> {
     return { success: false, message: 'No eligible users found' };
   }
 
-  // Get total tickets for stats (THIS WEEK ONLY)
-  const now = new Date();
-  const dayOfWeek = now.getUTCDay();
-  const weekStart = new Date(now);
-  weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
-  weekStart.setUTCHours(0, 0, 0, 0);
-  const weekStartISO = weekStart.toISOString();
+  // Get total tickets for stats (entries since last drawing)
+  const recentDrawingForStats = await getRecentDrawing();
+  let statsCutoff: string;
+
+  if (recentDrawingForStats?.drawnAt) {
+    statsCutoff = new Date(recentDrawingForStats.drawnAt).toISOString();
+  } else {
+    const now = new Date();
+    const dayOfWeek = now.getUTCDay();
+    const weekStart = new Date(now);
+    weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+    weekStart.setUTCHours(0, 0, 0, 0);
+    statsCutoff = weekStart.toISOString();
+  }
 
   const { data: weekSubs } = await supabase
     .from('subscriptions')
     .select('wallet_address')
-    .gte('created_at', weekStartISO);
+    .gt('created_at', statsCutoff);
   const totalTickets = weekSubs?.length ?? 0;
 
   // Get on-chain balance - this is the source of truth
@@ -287,15 +327,8 @@ export async function performJackpotDraw(): Promise<DrawingResult> {
     };
   }
 
-  // Reset all ticket counts so next week starts fresh
-  const { error: resetError } = await supabase
-    .from('users')
-    .update({ subscription_count: 0 })
-    .gt('subscription_count', 0);
-
-  if (resetError) {
-    console.error('Failed to reset ticket counts:', resetError);
-  }
+  // Note: No need to reset anything - entries are filtered by last drawing time
+  // New entries after this drawing will be the next pool
 
   return {
     success: true,

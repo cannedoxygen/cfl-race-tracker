@@ -24,18 +24,31 @@ export async function GET() {
       console.error('Failed to fetch on-chain balance:', rpcError);
     }
 
-    // Get subscriptions from THIS WEEK only
-    const now = new Date();
-    const dayOfWeek = now.getUTCDay();
-    const weekStart = new Date(now);
-    weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
-    weekStart.setUTCHours(0, 0, 0, 0);
-    const weekStartISO = weekStart.toISOString();
+    // Get the most recent drawing to filter entries created AFTER it
+    const recentDrawingForFilter = await getRecentDrawing();
+    const lastDrawingTime = recentDrawingForFilter?.drawnAt
+      ? new Date(recentDrawingForFilter.drawnAt).toISOString()
+      : null;
+
+    // If no drawing yet, fall back to week start (Sunday)
+    let entryCutoff: string;
+    if (lastDrawingTime) {
+      entryCutoff = lastDrawingTime;
+      console.log('Jackpot: Filtering entries after last drawing:', lastDrawingTime);
+    } else {
+      const now = new Date();
+      const dayOfWeek = now.getUTCDay();
+      const weekStart = new Date(now);
+      weekStart.setUTCDate(now.getUTCDate() - dayOfWeek);
+      weekStart.setUTCHours(0, 0, 0, 0);
+      entryCutoff = weekStart.toISOString();
+      console.log('Jackpot: No previous drawing, using week start:', entryCutoff);
+    }
 
     const { data: subscriptions, error: subsError } = await supabase
       .from('subscriptions')
       .select('wallet_address')
-      .gte('created_at', weekStartISO);
+      .gt('created_at', entryCutoff);
 
     if (subsError) {
       console.error('Failed to fetch subscriptions:', subsError);
