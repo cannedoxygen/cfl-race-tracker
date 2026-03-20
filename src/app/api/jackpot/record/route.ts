@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-// Manual endpoint to record a drawing that happened outside the system
+// Manual endpoint to record or update a drawing
 export async function POST(request: NextRequest) {
   try {
     const adminKey = process.env.REFERRAL_ADMIN_KEY;
@@ -17,10 +17,31 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { weekId, winnerWallet, winnerTickets, totalTickets, prizeSol, txSignature } = body;
+    const { weekId, winnerWallet, winnerTickets, totalTickets, prizeSol, txSignature, update } = body;
 
-    if (!weekId || !winnerWallet || !prizeSol) {
-      return NextResponse.json({ error: 'Missing required fields: weekId, winnerWallet, prizeSol' }, { status: 400 });
+    if (!weekId) {
+      return NextResponse.json({ error: 'Missing required field: weekId' }, { status: 400 });
+    }
+
+    // If update flag is set, just update the txSignature
+    if (update) {
+      const { data, error } = await supabase
+        .from('jackpot_drawings')
+        .update({ tx_signature: txSignature })
+        .eq('week_id', weekId)
+        .select();
+
+      if (error) {
+        console.error('Failed to update drawing:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, updated: true, data });
+    }
+
+    // Otherwise, insert new record
+    if (!winnerWallet || !prizeSol) {
+      return NextResponse.json({ error: 'Missing required fields: winnerWallet, prizeSol' }, { status: 400 });
     }
 
     const prizeLamports = Math.round(prizeSol * 1_000_000_000);
