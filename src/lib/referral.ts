@@ -17,16 +17,21 @@ export function getCurrentWeekId(): string {
 export function getNextDrawingTime(): Date {
   const now = new Date();
   const dayOfWeek = now.getDay();
-  const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
+
+  // Calculate days until Friday (0 = Sunday, 5 = Friday)
+  let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+
+  // If it's Friday, check if we're past noon
+  if (daysUntilFriday === 0) {
+    // It's Friday - if past noon, go to next Friday
+    if (now.getHours() >= 12) {
+      daysUntilFriday = 7;
+    }
+  }
 
   const nextFriday = new Date(now);
   nextFriday.setDate(now.getDate() + daysUntilFriday);
   nextFriday.setHours(12, 0, 0, 0);
-
-  // If it's Friday but past noon, go to next Friday
-  if (dayOfWeek === 5 && now.getHours() >= 12) {
-    nextFriday.setDate(nextFriday.getDate() + 7);
-  }
 
   return nextFriday;
 }
