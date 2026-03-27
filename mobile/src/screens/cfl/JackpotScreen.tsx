@@ -66,13 +66,16 @@ export function JackpotScreen() {
   const getNextFriday = () => {
     const now = new Date();
     const dayOfWeek = now.getDay();
-    const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
+    let daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+
+    // If it's Friday past noon, go to next Friday
+    if (daysUntilFriday === 0 && now.getHours() >= 12) {
+      daysUntilFriday = 7;
+    }
+
     const nextFriday = new Date(now);
     nextFriday.setDate(now.getDate() + daysUntilFriday);
     nextFriday.setHours(12, 0, 0, 0);
-    if (dayOfWeek === 5 && now.getHours() >= 12) {
-      nextFriday.setDate(nextFriday.getDate() + 7);
-    }
     return nextFriday.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
