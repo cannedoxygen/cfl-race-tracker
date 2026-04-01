@@ -177,21 +177,23 @@ export function Dashboard() {
               />
             </div>
 
-            {/* Bounce Alert - tokens recovering from dips */}
+            {/* Momentum - what's accelerating */}
             <div className="w-[220px] card-pixel p-2 overflow-hidden">
-              <BounceAlert
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
+                metric="momentum"
               />
             </div>
 
-            {/* Reversal Risk - tokens that pumped and may drop */}
+            {/* Volatile - pure swing measurement */}
             <div className="w-[220px] card-pixel p-2 overflow-hidden">
-              <ReversalRisk
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
+                metric="volatile"
               />
             </div>
 
@@ -236,17 +238,19 @@ export function Dashboard() {
               />
             </div>
             <div className="min-h-[150px] card-pixel p-3">
-              <BounceAlert
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
+                metric="momentum"
               />
             </div>
             <div className="min-h-[150px] card-pixel p-3">
-              <ReversalRisk
+              <SmartMovers
                 positions={positions}
                 selectedToken={selectedToken}
                 onSelectToken={setSelectedToken}
+                metric="volatile"
               />
             </div>
             <div className="min-h-[180px] card-pixel p-3">
