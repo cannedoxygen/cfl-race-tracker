@@ -126,11 +126,22 @@ export function PaywallGate({ children }: Props) {
         })
       );
 
+      // Get fresh blockhash right before sending
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
       // Send transaction
-      const signature = await sendTransaction(transaction, connection);
+      const signature = await sendTransaction(transaction, connection, {
+        skipPreflight: true,
+        maxRetries: 3,
+      });
 
       // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed');
+      await connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        'confirmed'
+      );
 
       // Verify payment with backend
       const response = await fetch('/api/verify-payment', {
