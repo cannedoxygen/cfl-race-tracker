@@ -139,23 +139,16 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
         })
       );
 
-      // Get fresh blockhash right before sending
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
-
       signature = await sendTransaction(transaction, connection, {
         skipPreflight: true,
-        maxRetries: 3,
+        maxRetries: 5,
+        preflightCommitment: 'finalized',
       });
 
       // Try to confirm, but don't fail if it times out
       // The backend will verify the transaction anyway
       try {
-        await connection.confirmTransaction(
-          { signature, blockhash, lastValidBlockHeight },
-          'confirmed'
-        );
+        await connection.confirmTransaction(signature, 'confirmed');
       } catch (confirmErr) {
         console.warn('Confirmation timeout, proceeding to verify:', confirmErr);
         // Continue anyway - backend will check if tx succeeded

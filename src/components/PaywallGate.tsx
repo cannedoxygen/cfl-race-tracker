@@ -126,22 +126,16 @@ export function PaywallGate({ children }: Props) {
         })
       );
 
-      // Get fresh blockhash right before sending
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
-
-      // Send transaction
+      // Send transaction - skipPreflight and maxRetries help on mobile browsers
+      // where Phantom redirect flow can cause delays
       const signature = await sendTransaction(transaction, connection, {
         skipPreflight: true,
-        maxRetries: 3,
+        maxRetries: 5,
+        preflightCommitment: 'finalized',
       });
 
       // Wait for confirmation
-      await connection.confirmTransaction(
-        { signature, blockhash, lastValidBlockHeight },
-        'confirmed'
-      );
+      await connection.confirmTransaction(signature, 'confirmed');
 
       // Verify payment with backend
       const response = await fetch('/api/verify-payment', {
