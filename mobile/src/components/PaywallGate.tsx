@@ -258,9 +258,6 @@ export function PaywallGate({ children }: Props) {
         })
       );
 
-      // Get recent blockhash
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
       transaction.feePayer = fromPubkey;
 
       // Sign and send via Mobile Wallet Adapter
@@ -270,6 +267,10 @@ export function PaywallGate({ children }: Props) {
           cluster: 'mainnet-beta',
           identity: APP_IDENTITY,
         });
+
+        // Get blockhash right before signing so it doesn't expire
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
 
         // Sign and send
         const signedTransactions = await wallet.signAndSendTransactions({

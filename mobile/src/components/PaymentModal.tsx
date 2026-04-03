@@ -192,8 +192,6 @@ export function PaymentModal({ visible, onClose, onSuccess }: Props) {
         })
       );
 
-      const { blockhash } = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = blockhash;
       transaction.feePayer = fromPubkey;
 
       const signature = await transact(async (wallet: any) => {
@@ -201,6 +199,10 @@ export function PaymentModal({ visible, onClose, onSuccess }: Props) {
           cluster: 'mainnet-beta',
           identity: APP_IDENTITY,
         });
+
+        // Get blockhash right before signing so it doesn't expire
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
 
         const signedTransactions = await wallet.signAndSendTransactions({
           transactions: [transaction],
