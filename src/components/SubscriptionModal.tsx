@@ -3,7 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { Transaction, SystemProgram } from '@solana/web3.js';
+import {
+  SystemProgram,
+  TransactionMessage,
+  VersionedTransaction,
+} from '@solana/web3.js';
 import {
   TREASURY_ADDRESS,
   JACKPOT_ADDRESS,
@@ -119,25 +123,32 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
     let signature: string | null = null;
 
     try {
-      const transaction = new Transaction();
-
-      // Transfer to treasury (0.05 SOL)
-      transaction.add(
+      // Build instructions
+      const instructions = [
+        // Transfer to treasury (0.05 SOL)
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: TREASURY_ADDRESS.value,
           lamports: TREASURY_AMOUNT_LAMPORTS,
-        })
-      );
-
-      // Transfer to jackpot (0.05 SOL)
-      transaction.add(
+        }),
+        // Transfer to jackpot (0.05 SOL)
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: JACKPOT_ADDRESS.value,
           lamports: JACKPOT_AMOUNT_LAMPORTS,
-        })
-      );
+        }),
+      ];
+
+      // Use VersionedTransaction for MWA (Mobile Wallet Adapter) compatibility.
+      // Legacy Transaction.serialize() fails with "missing signature" on MWA
+      // because it validates signatures before the wallet can sign.
+      const { blockhash } = await connection.getLatestBlockhash();
+      const messageV0 = new TransactionMessage({
+        payerKey: publicKey,
+        recentBlockhash: blockhash,
+        instructions,
+      }).compileToV0Message();
+      const transaction = new VersionedTransaction(messageV0);
 
       signature = await sendTransaction(transaction, connection);
 
