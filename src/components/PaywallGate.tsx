@@ -108,7 +108,7 @@ export function PaywallGate({ children }: Props) {
       // Create transaction with two transfers
       const transaction = new Transaction();
 
-      // Transfer to treasury (0.01 SOL)
+      // Transfer to treasury (0.05 SOL)
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -117,7 +117,7 @@ export function PaywallGate({ children }: Props) {
         })
       );
 
-      // Transfer to jackpot (0.01 SOL)
+      // Transfer to jackpot (0.05 SOL)
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -229,7 +229,7 @@ export function PaywallGate({ children }: Props) {
                 {SUBSCRIPTION_COST_SOL} SOL
               </p>
               <p className="font-pixel-body text-cfl-text-muted text-xs mt-2">
-                0.01 SOL goes to the jackpot pool
+                0.05 SOL goes to the jackpot pool
               </p>
             </div>
 

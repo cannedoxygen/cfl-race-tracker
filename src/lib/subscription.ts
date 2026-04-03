@@ -128,9 +128,9 @@ export async function recordSubscription(
       .eq('wallet_address', walletAddress);
   }
 
-  // Update jackpot (add 0.01 SOL = 10,000,000 lamports)
+  // Update jackpot (add 0.05 SOL = 50,000,000 lamports)
   const { error: jackpotError } = await supabase.rpc('increment_jackpot', {
-    amount: 10_000_000,
+    amount: 50_000_000,
   });
 
   if (jackpotError) {

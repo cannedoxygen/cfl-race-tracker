@@ -121,7 +121,7 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
     try {
       const transaction = new Transaction();
 
-      // Transfer to treasury (0.01 SOL)
+      // Transfer to treasury (0.05 SOL)
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -130,7 +130,7 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
         })
       );
 
-      // Transfer to jackpot (0.01 SOL)
+      // Transfer to jackpot (0.05 SOL)
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -238,11 +238,11 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
                 <div className="mt-2 space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="font-pixel-body text-cfl-text">Jackpot Pool</span>
-                    <span className="font-pixel-body text-cfl-green">0.01 SOL</span>
+                    <span className="font-pixel-body text-cfl-green">0.05 SOL</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="font-pixel-body text-cfl-text">Development</span>
-                    <span className="font-pixel-body text-cfl-purple">0.01 SOL</span>
+                    <span className="font-pixel-body text-cfl-purple">0.05 SOL</span>
                   </div>
                 </div>
               </div>

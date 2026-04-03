@@ -145,7 +145,7 @@ export function JackpotDisplay() {
           <ol className="space-y-3 font-pixel-body text-lg text-cfl-text-muted">
             <li className="flex gap-3 items-start">
               <span className="flex-shrink-0 w-6 h-6 bg-cfl-orange/20 text-cfl-orange rounded font-pixel text-[8px] flex items-center justify-center">1</span>
-              <span>Pay 0.02 SOL for a 24hr race pass</span>
+              <span>Pay 0.1 SOL for a 24hr race pass</span>
             </li>
             <li className="flex gap-3 items-start">
               <span className="flex-shrink-0 w-6 h-6 bg-cfl-teal/20 text-cfl-teal rounded font-pixel text-[8px] flex items-center justify-center">🎟</span>
@@ -153,7 +153,7 @@ export function JackpotDisplay() {
             </li>
             <li className="flex gap-3 items-start">
               <span className="flex-shrink-0 w-6 h-6 bg-cfl-green/20 text-cfl-green rounded font-pixel text-[8px] flex items-center justify-center">+</span>
-              <span>0.01 SOL from each pass goes into the jackpot pool</span>
+              <span>0.05 SOL from each pass goes into the jackpot pool</span>
             </li>
             <li className="flex gap-3 items-start">
               <span className="flex-shrink-0 w-6 h-6 bg-cfl-gold/20 text-cfl-gold rounded font-pixel text-[8px] flex items-center justify-center">$</span>

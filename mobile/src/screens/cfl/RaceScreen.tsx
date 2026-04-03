@@ -19,6 +19,9 @@ import { RacePosition } from '../../types';
 import { AlertBadges } from '../../components/cfl/AlertBadges';
 import { RaceChart } from '../../components/cfl/RaceChart';
 import { SmartMovers } from '../../components/cfl/SmartMovers';
+import { PreRaceVelocity } from '../../components/cfl/PreRaceVelocity';
+import { BounceAlert } from '../../components/cfl/BounceAlert';
+import { ReversalRisk } from '../../components/cfl/ReversalRisk';
 import { TopMovers } from '../../components/cfl/TopMovers';
 import { Leaderboard } from '../../components/cfl/Leaderboard';
 import { TokenStatsCard } from '../../components/cfl/TokenStatsCard';
@@ -71,6 +74,9 @@ export function RaceScreen() {
         const tokens = await fetchTokens(walletAddress);
         if (tokens.length > 0) {
           initializePositions(tokens);
+        } else if (!hasAccess) {
+          // No tokens returned - likely no subscription, show payment modal
+          setShowPaymentModal(true);
         }
       } catch (err) {
         console.error('Failed to load tokens:', err);
@@ -78,7 +84,7 @@ export function RaceScreen() {
       setIsLoading(false);
     }
     loadTokens();
-  }, [walletAddress]);
+  }, [walletAddress, hasAccess]);
 
   // Poll prices when racing (requires wallet for subscription check)
   useEffect(() => {
@@ -232,7 +238,7 @@ export function RaceScreen() {
           />
         </View>
 
-        {/* SmartMovers - Hot */}
+        {/* HOT NOW */}
         <View style={styles.card}>
           <SmartMovers
             positions={sortedPositions}
@@ -242,7 +248,16 @@ export function RaceScreen() {
           />
         </View>
 
-        {/* SmartMovers - Momentum */}
+        {/* PRE-RACE VELOCITY */}
+        <View style={styles.card}>
+          <PreRaceVelocity
+            positions={sortedPositions}
+            selectedToken={selectedToken}
+            onSelectToken={setSelectedToken}
+          />
+        </View>
+
+        {/* MOMENTUM */}
         <View style={styles.card}>
           <SmartMovers
             positions={sortedPositions}
@@ -252,7 +267,7 @@ export function RaceScreen() {
           />
         </View>
 
-        {/* SmartMovers - Volatile */}
+        {/* VOLATILE */}
         <View style={styles.card}>
           <SmartMovers
             positions={sortedPositions}
@@ -262,28 +277,18 @@ export function RaceScreen() {
           />
         </View>
 
-        {/* SmartMovers - Trending */}
-        <View style={styles.card}>
-          <SmartMovers
-            positions={sortedPositions}
-            selectedToken={selectedToken}
-            onSelectToken={setSelectedToken}
-            metric="trending"
-          />
-        </View>
-
-        {/* TopMovers - Hourly */}
+        {/* HOURLY TOP MOVERS */}
         <View style={styles.cardTall}>
           <TopMovers
             positions={sortedPositions}
             selectedToken={selectedToken}
             onSelectToken={setSelectedToken}
             intervalMinutes={60}
-            topCount={3}
+            topCount={5}
           />
         </View>
 
-        {/* Leaderboard */}
+        {/* LEADERBOARD */}
         <View style={styles.cardTall}>
           <Leaderboard
             positions={sortedPositions}

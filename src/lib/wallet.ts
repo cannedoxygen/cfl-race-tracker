@@ -33,12 +33,12 @@ export const JACKPOT_ADDRESS = {
 };
 
 // Subscription cost in SOL
-export const SUBSCRIPTION_COST_SOL = 0.02;
-export const SUBSCRIPTION_COST_LAMPORTS = SUBSCRIPTION_COST_SOL * 1_000_000_000; // 20,000,000 lamports
+export const SUBSCRIPTION_COST_SOL = 0.1;
+export const SUBSCRIPTION_COST_LAMPORTS = SUBSCRIPTION_COST_SOL * 1_000_000_000; // 100,000,000 lamports
 
 // Split amounts
-export const TREASURY_AMOUNT_LAMPORTS = 10_000_000; // 0.01 SOL
-export const JACKPOT_AMOUNT_LAMPORTS = 10_000_000; // 0.01 SOL
+export const TREASURY_AMOUNT_LAMPORTS = 50_000_000; // 0.05 SOL
+export const JACKPOT_AMOUNT_LAMPORTS = 50_000_000; // 0.05 SOL
 
 // Subscription duration
 export const SUBSCRIPTION_DURATION_HOURS = 24;

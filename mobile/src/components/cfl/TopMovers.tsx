@@ -24,15 +24,25 @@ interface MoverData {
   symbol: string;
   logoURI: string;
   color: string;
-  accumulatedVolatility: number;
-  peakChange: number;
+  score: number;
+  maxMove: number;
   currentChange: number;
   direction: 'long' | 'short';
+}
+
+interface TokenHistory {
+  changes: number[];
+  maxMove: number;
+  lastUpdate: number;
 }
 
 const RANK_LABELS = ['1ST', '2ND', '3RD', '4TH', '5TH'];
 const RANK_COLORS = [COLORS.gold, '#9CA3AF', '#D97706', COLORS.textMuted, COLORS.textMuted];
 const BORDER_COLORS = [COLORS.gold, '#9CA3AF', '#D97706', COLORS.border, COLORS.border];
+
+// Decay rate: score reduces by this much per second of inactivity
+const DECAY_RATE = 0.02; // 2% per second
+const MAX_HISTORY = 150;
 
 // Noisy tokens - low liquidity causes oracle price oscillation without real trades
 const NOISY_TOKENS: Record<string, number> = {
@@ -47,7 +57,7 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
   const [topMovers, setTopMovers] = useState<MoverData[]>([]);
   const [timeRemaining, setTimeRemaining] = useState('60:00');
   const [showInfo, setShowInfo] = useState(false);
-  const volatilityAccumulator = useRef<Map<string, { volatility: number; peakChange: number; lastUpdate: number }>>(new Map());
+  const historyRef = useRef<Map<string, TokenHistory>>(new Map());
   const intervalStartTime = useRef<number>(Date.now());
   const intervalMs = intervalMinutes * 60 * 1000;
 
@@ -58,7 +68,7 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
       const elapsed = now - intervalStartTime.current >= intervalMs;
 
       if (elapsed) {
-        volatilityAccumulator.current.clear();
+        historyRef.current.clear();
         intervalStartTime.current = now;
       }
     };
@@ -67,58 +77,92 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
     return () => clearInterval(interval);
   }, [intervalMs]);
 
-  // Accumulate volatility data
+  // Track history and calculate scores with decay
   useEffect(() => {
     if (positions.length === 0) return;
 
     const now = Date.now();
 
+    // Update history for each position
     positions.forEach(pos => {
-      const existing = volatilityAccumulator.current.get(pos.mint);
-      const absChange = Math.abs(pos.position);
+      const existing = historyRef.current.get(pos.mint);
+      const currentChange = pos.position;
+      const absChange = Math.abs(currentChange);
 
       if (existing) {
-        volatilityAccumulator.current.set(pos.mint, {
-          volatility: existing.volatility + absChange * 0.1,
-          peakChange: Math.max(existing.peakChange, absChange),
+        const newChanges = [...existing.changes, currentChange];
+        if (newChanges.length > MAX_HISTORY) {
+          newChanges.shift();
+        }
+
+        // Apply decay to maxMove, then update with new value if higher
+        const timeSinceUpdate = now - existing.lastUpdate;
+        const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
+        const decayedMax = existing.maxMove * decayFactor;
+
+        historyRef.current.set(pos.mint, {
+          changes: newChanges,
+          maxMove: Math.max(decayedMax, absChange),
           lastUpdate: now,
         });
       } else {
-        volatilityAccumulator.current.set(pos.mint, {
-          volatility: absChange,
-          peakChange: absChange,
+        historyRef.current.set(pos.mint, {
+          changes: [currentChange],
+          maxMove: absChange,
           lastUpdate: now,
         });
       }
     });
 
-    const sortedMovers: { mint: string; volatility: number }[] = [];
-    volatilityAccumulator.current.forEach((data, mint) => {
-      // Apply noise dampener for known noisy tokens
-      const pos = positions.find(p => p.mint === mint);
-      const dampener = pos ? getNoiseDampener(pos.symbol) : 1.0;
-      sortedMovers.push({ mint, volatility: data.volatility * dampener });
-    });
-    sortedMovers.sort((a, b) => b.volatility - a.volatility);
-
-    const topN = sortedMovers.slice(0, topCount).map(({ mint }) => {
-      const pos = positions.find(p => p.mint === mint);
-      const accData = volatilityAccumulator.current.get(mint);
-
-      if (pos && accData) {
-        return {
-          mint: pos.mint,
-          symbol: pos.symbol,
-          logoURI: pos.logoURI,
-          color: pos.color,
-          accumulatedVolatility: accData.volatility,
-          peakChange: accData.peakChange,
-          currentChange: pos.position,
-          direction: pos.position >= 0 ? 'long' : 'short',
-        } as MoverData;
+    // Calculate volatility score for each token
+    const scored = positions.map(pos => {
+      const history = historyRef.current.get(pos.mint);
+      if (!history || history.changes.length < 3) {
+        return { pos, score: 0, maxMove: 0 };
       }
-      return null;
-    }).filter((m): m is MoverData => m !== null);
+
+      const changes = history.changes;
+
+      // Calculate volatility: sum of absolute differences
+      let volatilityScore = 0;
+      for (let i = 1; i < changes.length; i++) {
+        volatilityScore += Math.abs(changes[i] - changes[i - 1]);
+      }
+
+      // Weight recent changes more heavily
+      const recentChanges = changes.slice(-10);
+      let recentVolatility = 0;
+      for (let i = 1; i < recentChanges.length; i++) {
+        recentVolatility += Math.abs(recentChanges[i] - recentChanges[i - 1]);
+      }
+
+      // Combine overall + recent (recent weighted 2x)
+      let score = volatilityScore + (recentVolatility * 2);
+
+      // Apply time decay to score
+      const timeSinceUpdate = now - history.lastUpdate;
+      const decayFactor = Math.max(0, 1 - (DECAY_RATE * timeSinceUpdate / 1000));
+      score *= decayFactor;
+
+      // Apply noise dampening for known noisy tokens
+      score *= getNoiseDampener(pos.symbol);
+
+      return { pos, score, maxMove: history.maxMove };
+    });
+
+    // Sort by score and take top N
+    scored.sort((a, b) => b.score - a.score);
+
+    const topN = scored.slice(0, topCount).map(({ pos, score, maxMove }) => ({
+      mint: pos.mint,
+      symbol: pos.symbol,
+      logoURI: pos.logoURI,
+      color: pos.color,
+      score,
+      maxMove,
+      currentChange: pos.position,
+      direction: pos.position >= 0 ? 'long' : 'short',
+    } as MoverData));
 
     setTopMovers(topN);
   }, [positions, topCount]);
@@ -213,7 +257,7 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
                       </Text>
                     </View>
                     <Text style={styles.peakText}>
-                      PEAK {mover.peakChange.toFixed(1)}%
+                      MAX {mover.maxMove.toFixed(1)}%
                     </Text>
                     <Text style={[styles.change, isPositive ? styles.changePositive : styles.changeNegative]}>
                       {isPositive ? '+' : ''}{mover.currentChange.toFixed(2)}%
@@ -231,7 +275,7 @@ export function TopMovers({ positions, selectedToken, onSelectToken, intervalMin
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{title} TOP MOVERS</Text>
             <Text style={styles.modalText}>
-              Tokens with the most cumulative price movement over the hour. High volatility = more trading opportunities. Peak shows the highest % move seen.
+              Tokens with the most cumulative price movement over the hour. High volatility = more trading opportunities. MAX shows the highest % move seen.
             </Text>
             <TouchableOpacity style={styles.modalButton} onPress={() => setShowInfo(false)}>
               <Text style={styles.modalButtonText}>GOT IT</Text>

@@ -272,7 +272,7 @@ export function PaymentModal({ visible, onClose, onSuccess }: Props) {
                 <Text style={styles.priceLabel}>24-Hour Access Pass</Text>
                 <Text style={styles.priceValue}>{SUBSCRIPTION_COST_SOL} SOL</Text>
                 <Text style={styles.priceNote}>
-                  0.01 SOL goes to the jackpot pool
+                  0.05 SOL goes to the jackpot pool
                 </Text>
               </View>
 

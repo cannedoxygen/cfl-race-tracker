@@ -13,11 +13,11 @@ export const VIP_ADDRESSES = [
 ];
 
 // Subscription cost in SOL
-export const SUBSCRIPTION_COST_SOL = 0.02;
+export const SUBSCRIPTION_COST_SOL = 0.1;
 
 // Split: 50% to treasury, 50% to jackpot
-export const TREASURY_SPLIT_SOL = 0.01;
-export const JACKPOT_SPLIT_SOL = 0.01;
+export const TREASURY_SPLIT_SOL = 0.05;
+export const JACKPOT_SPLIT_SOL = 0.05;
 
 // Subscription duration in hours
 export const SUBSCRIPTION_DURATION_HOURS = 24;

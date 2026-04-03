@@ -158,7 +158,7 @@ export function JackpotScreen() {
             <View style={[styles.stepBadge, { backgroundColor: 'rgba(249,115,22,0.2)' }]}>
               <Text style={[styles.stepNumber, { color: COLORS.orange }]}>1</Text>
             </View>
-            <Text style={styles.stepText}>Pay 0.02 SOL for a 24hr race pass</Text>
+            <Text style={styles.stepText}>Pay 0.1 SOL for a 24hr race pass</Text>
           </View>
           <View style={styles.step}>
             <View style={[styles.stepBadge, { backgroundColor: 'rgba(88,166,255,0.2)' }]}>
@@ -172,7 +172,7 @@ export function JackpotScreen() {
             <View style={[styles.stepBadge, { backgroundColor: 'rgba(63,185,80,0.2)' }]}>
               <Text style={[styles.stepNumber, { color: COLORS.green }]}>+</Text>
             </View>
-            <Text style={styles.stepText}>0.01 SOL from each pass goes to jackpot</Text>
+            <Text style={styles.stepText}>0.05 SOL from each pass goes to jackpot</Text>
           </View>
           <View style={styles.step}>
             <View style={[styles.stepBadge, { backgroundColor: 'rgba(251,191,36,0.2)' }]}>

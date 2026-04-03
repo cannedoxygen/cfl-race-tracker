@@ -3,6 +3,11 @@ import { View, Text, StyleSheet, Image, FlatList, TouchableOpacity } from 'react
 import { COLORS, SPACING, RADIUS } from '../../constants/theme';
 import { RacePosition } from '../../types';
 
+// Bar color: green for long, red for short
+function getBarColor(isPositive: boolean): string {
+  return isPositive ? '#3FB950' : '#F85149';
+}
+
 interface Props {
   positions: RacePosition[];
   selectedToken?: string | null;
@@ -12,8 +17,13 @@ interface Props {
 export function Leaderboard({ positions, selectedToken, onSelectToken }: Props) {
   const renderItem = ({ item, index }: { item: RacePosition; index: number }) => {
     const isPositive = item.position >= 0;
+    const absValue = Math.abs(item.position);
     const isSelected = selectedToken === item.mint;
     const isTop3 = index < 3;
+
+    // Bar width: max 100% at 5% price change
+    const barWidth = Math.min((absValue / 5) * 100, 100);
+    const barColor = getBarColor(isPositive);
 
     return (
       <TouchableOpacity
@@ -26,6 +36,14 @@ export function Leaderboard({ positions, selectedToken, onSelectToken }: Props) 
         onPress={() => onSelectToken?.(isSelected ? null : item.mint)}
         activeOpacity={0.7}
       >
+        {/* Progress bar background (volatility meter) */}
+        <View
+          style={[
+            styles.progressBar,
+            { width: `${barWidth}%`, backgroundColor: barColor },
+          ]}
+        />
+
         {/* Rank */}
         <View style={styles.rankContainer}>
           <Text
@@ -36,7 +54,7 @@ export function Leaderboard({ positions, selectedToken, onSelectToken }: Props) 
               index === 2 && styles.rankThird,
             ]}
           >
-            {index + 1}
+            {index === 0 ? '👑' : index + 1}
           </Text>
         </View>
 
@@ -63,9 +81,9 @@ export function Leaderboard({ positions, selectedToken, onSelectToken }: Props) 
           </Text>
         </View>
 
-        {/* Change % */}
-        <Text style={[styles.change, isPositive ? styles.changePositive : styles.changeNegative]}>
-          {isPositive ? '+' : ''}{item.position.toFixed(2)}%
+        {/* Change % (absolute value - racing UP) */}
+        <Text style={styles.changeGold}>
+          {absValue.toFixed(2)}%
         </Text>
       </TouchableOpacity>
     );
@@ -115,6 +133,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.xs,
+    borderRadius: RADIUS.md,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  progressBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    opacity: 0.4,
     borderRadius: RADIUS.md,
   },
   rowTop3: {
@@ -197,18 +225,13 @@ const styles = StyleSheet.create({
   shortText: {
     color: COLORS.red,
   },
-  change: {
+  changeGold: {
     fontSize: 12,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
     width: 65,
     textAlign: 'right',
-  },
-  changePositive: {
-    color: COLORS.green,
-  },
-  changeNegative: {
-    color: COLORS.red,
+    color: COLORS.gold,
   },
   separator: {
     height: 1,

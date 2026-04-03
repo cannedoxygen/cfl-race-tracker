@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, RADIUS } from '../constants/theme';
 import {
@@ -98,11 +99,32 @@ export function PaywallGate({ children }: Props) {
     }
   }, [setSubscription]);
 
-  // Initial load - check for saved wallet
+  // Initial load - check for saved wallet in AsyncStorage
   useEffect(() => {
-    // For now, start in connect state
-    // In a full implementation, you'd check AsyncStorage for saved wallet
-    setState('connect');
+    async function restoreWallet() {
+      try {
+        const savedAddress = await AsyncStorage.getItem('cfl-wallet-address');
+        if (savedAddress) {
+          setWallet(savedAddress);
+
+          // Check if VIP
+          if (checkVip(savedAddress)) {
+            setSubscription(null, true);
+            setState('active');
+            return;
+          }
+
+          // Check subscription
+          await checkSubscriptionStatus(savedAddress);
+        } else {
+          setState('connect');
+        }
+      } catch (err) {
+        console.error('Failed to restore wallet:', err);
+        setState('connect');
+      }
+    }
+    restoreWallet();
   }, []);
 
   // Check if subscription expired
@@ -170,6 +192,7 @@ export function PaywallGate({ children }: Props) {
 
       console.log('Connected wallet address:', address);
       setWallet(address);
+      await AsyncStorage.setItem('cfl-wallet-address', address);
 
       // Check if VIP
       if (checkVip(address)) {
@@ -217,7 +240,7 @@ export function PaywallGate({ children }: Props) {
       // Create transaction with two transfers
       const transaction = new Transaction();
 
-      // Transfer to treasury (0.01 SOL)
+      // Transfer to treasury (0.05 SOL)
       transaction.add(
         SystemProgram.transfer({
           fromPubkey,
@@ -226,7 +249,7 @@ export function PaywallGate({ children }: Props) {
         })
       );
 
-      // Transfer to jackpot (0.01 SOL)
+      // Transfer to jackpot (0.05 SOL)
       transaction.add(
         SystemProgram.transfer({
           fromPubkey,
@@ -278,8 +301,9 @@ export function PaywallGate({ children }: Props) {
   };
 
   // Handle disconnect
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     disconnect();
+    await AsyncStorage.removeItem('cfl-wallet-address');
     setState('connect');
   };
 
@@ -288,8 +312,9 @@ export function PaywallGate({ children }: Props) {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
 
-  // If verified access, show the app
-  if (hasVerifiedAccess && state === 'active') {
+  // If wallet connected (with or without subscription), show the app
+  // Subscription gating for race is handled in RaceScreen via hasAccess
+  if (walletAddress && (state === 'active' || state === 'pay')) {
     return <>{children}</>;
   }
 
@@ -346,7 +371,7 @@ export function PaywallGate({ children }: Props) {
                 <Text style={styles.priceLabel}>24-Hour Access Pass</Text>
                 <Text style={styles.priceValue}>{SUBSCRIPTION_COST_SOL} SOL</Text>
                 <Text style={styles.priceNote}>
-                  0.01 SOL goes to the jackpot pool
+                  0.05 SOL goes to the jackpot pool
                 </Text>
               </View>
 

@@ -25,7 +25,6 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="com.cfl.adv"/>
-        <data android:scheme="exp+cfl-adv"/>
       </intent-filter>
     </activity>
   </application>
