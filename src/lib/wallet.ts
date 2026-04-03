@@ -54,9 +54,9 @@ export function isVipWallet(walletAddress: string): boolean {
   return VIP_WALLETS.includes(walletAddress);
 }
 
-// RPC endpoint - set via environment variable
+// RPC endpoint - use Helius for reliable, fast transactions
 export const SOLANA_RPC_ENDPOINT =
-  process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://api.mainnet-beta.solana.com';
+  process.env.NEXT_PUBLIC_SOLANA_RPC || 'https://mainnet.helius-rpc.com/?api-key=6ed0e579-53f4-43f8-a060-6cd930b55ef1';
 
 // Helper to truncate wallet address for display
 export function truncateAddress(address: string, chars = 4): string {
