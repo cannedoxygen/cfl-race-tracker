@@ -139,15 +139,7 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
         })
       );
 
-      // Set blockhash and feePayer - required for Mobile Wallet Adapter
-      const { blockhash } = await connection.getLatestBlockhash('finalized');
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
-
-      signature = await sendTransaction(transaction, connection, {
-        skipPreflight: true,
-        maxRetries: 5,
-      });
+      signature = await sendTransaction(transaction, connection);
 
       // Try to confirm, but don't fail if it times out
       // The backend will verify the transaction anyway

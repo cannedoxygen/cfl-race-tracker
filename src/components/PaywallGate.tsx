@@ -126,16 +126,8 @@ export function PaywallGate({ children }: Props) {
         })
       );
 
-      // Set blockhash and feePayer - required for Mobile Wallet Adapter
-      const { blockhash } = await connection.getLatestBlockhash('finalized');
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
-
       // Send transaction
-      const signature = await sendTransaction(transaction, connection, {
-        skipPreflight: true,
-        maxRetries: 5,
-      });
+      const signature = await sendTransaction(transaction, connection);
 
       // Wait for confirmation
       await connection.confirmTransaction(signature, 'confirmed');

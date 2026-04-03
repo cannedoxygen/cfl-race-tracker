@@ -7,6 +7,7 @@ import {
 } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { SolanaMobileWalletAdapter } from '@solana-mobile/wallet-adapter-mobile';
 import { SOLANA_RPC_ENDPOINT } from '@/lib/wallet';
 
 interface Props {
@@ -15,7 +16,14 @@ interface Props {
 
 export function WalletProviderInner({ children }: Props) {
   const wallets = useMemo(
-    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
+    () => [
+      new SolanaMobileWalletAdapter({
+        appIdentity: { name: 'CFL Race', uri: 'https://cfladv.fun' },
+        cluster: 'mainnet-beta',
+      }),
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+    ],
     []
   );
 
