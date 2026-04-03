@@ -126,12 +126,14 @@ export function PaywallGate({ children }: Props) {
         })
       );
 
-      // Send transaction - skipPreflight and maxRetries help on mobile browsers
-      // where Phantom redirect flow can cause delays
+      // Set blockhash before sending - Mobile Wallet Adapter doesn't auto-set it
+      const { blockhash } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
+
+      // Send transaction
       const signature = await sendTransaction(transaction, connection, {
         skipPreflight: true,
         maxRetries: 5,
-        preflightCommitment: 'finalized',
       });
 
       // Wait for confirmation

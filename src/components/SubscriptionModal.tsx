@@ -139,10 +139,13 @@ export function SubscriptionModal({ isOpen, onClose, onSuccess }: Props) {
         })
       );
 
+      // Set blockhash before sending - Mobile Wallet Adapter doesn't auto-set it
+      const { blockhash } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
+
       signature = await sendTransaction(transaction, connection, {
         skipPreflight: true,
         maxRetries: 5,
-        preflightCommitment: 'finalized',
       });
 
       // Try to confirm, but don't fail if it times out
