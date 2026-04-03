@@ -126,9 +126,10 @@ export function PaywallGate({ children }: Props) {
         })
       );
 
-      // Set blockhash before sending - Mobile Wallet Adapter doesn't auto-set it
+      // Set blockhash and feePayer - required for Mobile Wallet Adapter
       const { blockhash } = await connection.getLatestBlockhash('finalized');
       transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
 
       // Send transaction
       const signature = await sendTransaction(transaction, connection, {
