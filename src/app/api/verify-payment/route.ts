@@ -88,18 +88,20 @@ export async function POST(request: NextRequest) {
 
         console.log('verify-payment: Found transfer to', destination, 'amount', lamports);
 
-        // Check treasury transfer (allow small variance for fees)
+        // Check treasury transfer - must be exactly 0.05 SOL (50M lamports, tiny variance ok)
         if (
           destination === TREASURY_ADDRESS.toBase58() &&
-          lamports >= TREASURY_AMOUNT_LAMPORTS - 1000
+          lamports >= TREASURY_AMOUNT_LAMPORTS - 1000 &&
+          lamports <= TREASURY_AMOUNT_LAMPORTS + 1000
         ) {
           treasuryTransferFound = true;
         }
 
-        // Check jackpot transfer
+        // Check jackpot transfer - must be exactly 0.05 SOL
         if (
           destination === JACKPOT_ADDRESS.toBase58() &&
-          lamports >= JACKPOT_AMOUNT_LAMPORTS - 1000
+          lamports >= JACKPOT_AMOUNT_LAMPORTS - 1000 &&
+          lamports <= JACKPOT_AMOUNT_LAMPORTS + 1000
         ) {
           jackpotTransferFound = true;
         }
